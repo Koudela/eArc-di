@@ -13,5 +13,10 @@
             "name": "Thomas Koudela",
             "email": "thomas@koudela.net"
         }
-    ]
+    ],
+    "autoload": {
+        "psr-4" : {
+            "eArc\\" : ""
+        }
+    }
 }
