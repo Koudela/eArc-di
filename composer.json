@@ -1,0 +1,16 @@
+{
+    "name": "earc/di",
+    "description": "eArc - the explizit architecture framework - dependency injection container",
+    "type": "library",
+    "require": {
+        "php": "^7.2",
+	"psr/container": "^1.0.0"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Thomas Koudela",
+            "email": "thomas@koudela.net"
+        }
+    ]
+}
