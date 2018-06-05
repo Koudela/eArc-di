@@ -2,7 +2,7 @@
     "name": "earc/di",
     "description": "eArc - the explizit architecture framework - dependency injection container",
     "type": "library",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "require": {
         "php": "^7.2",
 	"psr/container": "^1.0.0"
@@ -16,7 +16,7 @@
     ],
     "autoload": {
         "psr-4" : {
-            "eArc\\di\\" : ""
+            "eArc\\di\\" : "src"
         }
     }
 }

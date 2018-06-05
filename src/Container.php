@@ -11,20 +11,9 @@
 namespace eArc\di;
 
 /**
- * No entry was found for the identifier in the container.
+ * Generic container class.
  */
-class NotFoundException extends \Exception implements \Psr\Container\NotFoundExceptionInterface
-{
-}
-
-/**
- * Base container exception class
- */
-class ContainerException extends \Exception implements \Psr\Container\ContainerExceptionInterface
-{
-}
-
-class Container implements \Psr\Container\ContainerInterface
+class Container implements IContainer
 {
     protected $data;
 
@@ -38,12 +27,12 @@ class Container implements \Psr\Container\ContainerInterface
      */
     public function get($id)
     {
-        if (!isset($this->data)) throw \eArc\di\NotFoundException();
+        if (!isset($this->data)) throw NotFoundException();
         try {
             return $this->data[$id];
         }
         catch (\Throwable $e) {
-            throw \eArc\di\ContainerException($e->getMessage(), 0, $e);
+            throw ContainerException($e->getMessage(), 0, $e);
         }
     }
 
@@ -56,11 +45,7 @@ class Container implements \Psr\Container\ContainerInterface
     }
 
     /**
-     * Sets/Overwrites an entry for a specific $id.
-     *
-     * @param string  $id Identifier of the entry.
-     * @param [mixed] $payload The (new) entry for the given $id.
-     * @return void
+     * @inheritDoc
      */
     public function set(string $id, $payload): void
     {
@@ -68,9 +53,7 @@ class Container implements \Psr\Container\ContainerInterface
     }
 
     /**
-     * Get the existing ids.
-     *
-     * @return array
+     * @inheritDoc
      */
     public function getKeys(): array
     {
@@ -78,13 +61,9 @@ class Container implements \Psr\Container\ContainerInterface
     }
 
     /**
-     * Merges a container object into the container. 
-     *
-     * @param \eArc\di\Container $container
-     * @param bool $overwrite If a key is already present: true overwrites the existing entry, false dropes the new entry. 
-     * @return void
+     * @inheritDoc
      */
-    public function merge(\eArc\di\Container $container, bool $overwrite=false)
+    public function merge(Container $container, bool $overwrite=false)
     {
         foreach ($container->getKeys() as $key) {
             if ($this->has($key) && !$overwrite) continue;
