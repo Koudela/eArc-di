@@ -1,6 +1,6 @@
 <?php
 /**
- * e-Arc Framework - the explizit Architecture Framework 
+ * e-Arc Framework - the explicit Architecture Framework
  *
  * @package earc/di
  * @link https://github.com/Koudela/earc-di/
@@ -13,9 +13,10 @@ namespace eArc\di;
 /**
  * @inheritDoc
  */
-class DependencyObject implements IDependencyObject
+class DependencyObject implements interfaces\DependencyObjectInterface
 {
     protected $dc;
+    protected $base;
     protected $name;
     protected $config;
     protected $instance;
@@ -23,9 +24,10 @@ class DependencyObject implements IDependencyObject
     /**
      * @inheritDoc
      */
-    public function __construct(string $name, array $config, DependencyContainer $dc)
+    public function __construct(string $name, array $config, DependencyContainer $dc, DependencyContainer $base)
     {
         $this->dc = $dc;
+        $this->base = $base;
         $this->name = $name;
         $this->config = $config;
     }
@@ -33,10 +35,11 @@ class DependencyObject implements IDependencyObject
     /**
      * @inheritDoc
      */
-    public function getInstance(): object
+    final public function getInstance(): object
     {
-        if (!isset($this->instance))
+        if (!isset($this->instance)) {
             $this->instance = $this->makeInstance();
+        }
 
         return $this->instance;
     }
@@ -44,14 +47,16 @@ class DependencyObject implements IDependencyObject
     /**
      * @inheritDoc
      */
-    public function makeInstance(): object {
-        if ($this->config instanceof \Closure)
+    final public function makeInstance(): object
+    {
+        if ($this->config instanceof \Closure) {
             return ($this->config)();
+        }
 
-        if (\count($this->config) === 0)
+        if (\count($this->config) === 0) {
             return new $this->name();
+        }
 
-        $dc = new DependencyContainer($this->dc);
         return new $this->name(...$this->calculateArguments($this->config));
     }
 
@@ -64,18 +69,23 @@ class DependencyObject implements IDependencyObject
     private function calculateArguments(array $config): array
     {
         $args = [];
-        foreach ($config as $key => $item) {
+
+        foreach ($config as $key => $item)
+        {
             if (\is_string($item) && \class_exists($item)) {
-                $args[] = $this->dc->base->get($item);
+                $args[] = $this->base->get($item);
                 continue;
             }
+
             if (\is_string($key) && \class_exists($key)) {
-                $this->set($key, $item);
+                $this->dc->set($key, $item);
                 $args[] = $this->dc->get($key);
                 continue;    
             }
+
             $args[] = $item;
         }
+
         return $args;
     }
 }

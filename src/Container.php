@@ -1,6 +1,6 @@
 <?php
 /**
- * e-Arc Framework - the explizit Architecture Framework 
+ * e-Arc Framework - the explicit Architecture Framework
  *
  * @package earc/di
  * @link https://github.com/Koudela/earc-di/
@@ -10,12 +10,16 @@
 
 namespace eArc\di;
 
+use eArc\di\interfaces\ContainerInterface;
+use eArc\di\exceptions\NotFoundException;
+use eArc\di\exceptions\ContainerException;
+
 /**
  * Generic container class.
  */
-class Container implements IContainer
+class Container implements ContainerInterface
 {
-    protected $data;
+    private $data;
 
     public function __construct()
     {
@@ -27,12 +31,13 @@ class Container implements IContainer
      */
     public function get($id)
     {
-        if (!isset($this->data)) throw NotFoundException();
+        if (!isset($this->data)) throw new NotFoundException();
+
         try {
             return $this->data[$id];
         }
         catch (\Throwable $e) {
-            throw ContainerException($e->getMessage(), 0, $e);
+            throw new ContainerException($e->getMessage(), 0, $e);
         }
     }
 
@@ -63,11 +68,11 @@ class Container implements IContainer
     /**
      * @inheritDoc
      */
-    public function merge(Container $container, bool $overwrite=false)
+    public function merge(ContainerInterface $container, bool $overwrite=false)
     {
         foreach ($container->getKeys() as $key) {
             if ($this->has($key) && !$overwrite) continue;
-            $this->set($container);
+            $this->set($key, $container->get($key));
         }
     }
 }

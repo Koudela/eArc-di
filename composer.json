@@ -1,11 +1,11 @@
 {
     "name": "earc/di",
-    "description": "eArc - the explizit architecture framework - dependency injection container",
+    "description": "eArc - the explicit architecture framework - dependency injection container",
     "type": "library",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "require": {
         "php": "^7.2",
-	"psr/container": "^1.0.0"
+    	"psr/container": "^1.0.0"
     },
     "license": "MIT",
     "authors": [

@@ -1,6 +1,6 @@
 <?php
 /**
- * e-Arc Framework - the explizit Architecture Framework 
+ * e-Arc Framework - the explicit Architecture Framework
  *
  * @package earc/di
  * @link https://github.com/Koudela/earc-di/
@@ -13,7 +13,7 @@ namespace eArc\di;
 /**
  * Container with support of lazy dependency injection.
  */
-class DependencyContainer extends Container implements IDependencyContainerUse, IDependencyContainerConfig
+class DependencyContainer extends Container implements interfaces\DependencyContainerUsageInterface, interfaces\DependencyContainerConfigurationInterface
 {
     private $base;
 
@@ -28,8 +28,9 @@ class DependencyContainer extends Container implements IDependencyContainerUse, 
      */
     public function load(array $config): void
     {
-        foreach ($config as $classname => $conf) {
-            $this->set($classname, $conf);
+        foreach ($config as $className => $conf)
+        {
+            $this->set($className, $conf);
         }
     }
 
@@ -44,10 +45,13 @@ class DependencyContainer extends Container implements IDependencyContainerUse, 
     /**
      * @inheritDoc
      */
-    public function set(string $id, array $config): void
+    public function set(string $id, $config): void
     {
-        if (parent::has($id)) trigger_error('Overwrite of existing $id', E_USER_WARNING);
-        parent::set($id, new DependencyObject($id, $config, $this));
+        if (parent::has($id)) {
+            \trigger_error('Overwrite of existing $id', E_USER_WARNING);
+        }
+
+        parent::set($id, new DependencyObject($id, $config, $this, $this->base));
         
     }
 

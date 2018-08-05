@@ -1,6 +1,6 @@
 <?php
 /**
- * e-Arc Framework - the explizit Architecture Framework 
+ * e-Arc Framework - the explicit Architecture Framework
  *
  * @package earc/di
  * @link https://github.com/Koudela/earc-di/
@@ -8,15 +8,15 @@
  * @license http://opensource.org/licenses/MIT MIT License
  */
 
-namespace eArc\di;
+namespace eArc\di\interfaces;
 
 /**
- * Lazy configuration interface for the eArc DependencyContainer.
+ * Lazy configuration interfaces for the eArc DependencyContainer.
  */
-interface IDependencyContainerConfig
+interface DependencyContainerConfigurationInterface
 {
     /**
-     * Lazy initialation of the DependencyContainer configuration via array.
+     * Lazy initialisation of the DependencyContainer configuration via array.
      *
      * @param array $config The dependency configuration of the container.
      * @return void
@@ -24,7 +24,7 @@ interface IDependencyContainerConfig
     public function load(array $config): void;
 
     /**
-     * Lazy initialation of the DependencyContainer configuration via file.
+     * Lazy initialisation of the DependencyContainer configuration via file.
      *
      * @param string $filename Location of the configuration file returning an
      * dependency configuration array.

@@ -1,6 +1,6 @@
 <?php
 /**
- * e-Arc Framework - the explizit Architecture Framework 
+ * e-Arc Framework - the explicit Architecture Framework
  *
  * @package earc/di
  * @link https://github.com/Koudela/earc-di/
@@ -8,12 +8,12 @@
  * @license http://opensource.org/licenses/MIT MIT License
  */
 
-namespace eArc\di;
+namespace eArc\di\interfaces;
 
 /**
- * Generic container interface.
+ * Generic container interfaces.
  */
-interface IContainer extends \Psr\Container\ContainerInterface {
+interface ContainerInterface extends \Psr\Container\ContainerInterface {
     
     /**
      * Set/Overwrite an entry for a specific $id.
@@ -26,7 +26,6 @@ interface IContainer extends \Psr\Container\ContainerInterface {
 
     /**
      * Get the existing ids.
-     *
      * @return array
      */
     public function getKeys(): array;
@@ -34,10 +33,10 @@ interface IContainer extends \Psr\Container\ContainerInterface {
     /**
      * Merge a container object into the container. 
      *
-     * @param \eArc\di\Container $container
+     * @param ContainerInterface $container
      * @param bool $overwrite If true this method overwrites an existing entry,
-     * otherwise the new entry is droped. 
+     * otherwise the new entry is dropped.
      * @return void
      */
-    public function merge(Container $container, bool $overwrite=false);
+    public function merge(ContainerInterface $container, bool $overwrite=false);
 }
