@@ -53,6 +53,10 @@ class DependencyObject implements interfaces\DependencyObjectInterface
             return ($this->config)();
         }
 
+        if (!is_array($this->config)) {
+            return $this->config;
+        }
+
         if (\count($this->config) === 0) {
             return new $this->name();
         }
