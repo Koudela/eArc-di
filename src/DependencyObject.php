@@ -24,7 +24,7 @@ class DependencyObject implements interfaces\DependencyObjectInterface
     /**
      * @inheritDoc
      */
-    public function __construct(string $name, array $config, DependencyContainer $dc, DependencyContainer $base)
+    public function __construct(string $name, $config, DependencyContainer $dc, DependencyContainer $base)
     {
         $this->dc = $dc;
         $this->base = $base;
