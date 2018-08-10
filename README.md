@@ -6,6 +6,24 @@ The eArc dependency injection container is [psr-11](https://www.php-fig.org/psr/
 compatible, supports lazy instantiation, tree typed dependencies, subset 
 generation, container merging, inline factories and dynamic configuration.
  
+ ## Table of Contents
+ 
+ - [Installation](#installation)
+ - [Basic Usage](#basic-usage)
+   - [Accessing instances](#accessing-instances)
+   - [Dependency Configuration](#dependency-configuration)
+     - [Configuration via constructor arguments](#configuration-via-constructor-arguments)
+     - [Configuration using an inline factory](#configuration-using-an-inline-factory)
+     - [Configuration by direct instantiation](#configuration-by-direct-instantiation)
+   - [Using load](#using-load)
+   - [Loading configuration from file](#loading-configuration-from-file)
+   - [Overwriting existing dependencies](#overwriting-existing-dependencies)
+ - [Advanced Usage](#advanced-usage)
+   - [Tree typed dependencies](#tree-typed-dependencies)
+   - [Performance considerations](#performance-considerations)
+   - [Subset generation](#subset-generation)
+   - [Container merging](#container-merging)
+
 ## Installation
 
 If you want to use the eArc dependency injection container without the eArc
@@ -324,7 +342,7 @@ worlds the eArc dependency container supports subset generation.
 $dsc = $dc->subset(1st::class, 2nd::class, 3rd::class);
 ```
 
-`$dsc` is a new dependency container and if you `set` new dependencies the 
+`$dsc` is a new dependency container and if you define new dependencies the 
 original container is unaffected, but `1st::class`, `2nd::class` and 
 `3rd::class` reference the configuration and the instances in the original `$dc`
 container thus keeping the overhead minimal.
@@ -343,12 +361,13 @@ pubilc function __construct(\eArc\dc\DependencyContainer $dc)
             'The dependency container violates the subset condition: ' . 
             1st::class . ', ' . 
             2nd::class . ', ' . 
-            3rd::class'
+            3rd::class
         )
     }
     $apiDC = $dc;
     $apiDC->load([
-        ...the dependencies only relevant to the business domain itself go here...
+        // ...the dependency configuration only relevant to the business domain
+        // itself goes here...
     ]);
 }
 ```
@@ -361,7 +380,7 @@ $api = new oneOfMyBuisinessApis($dc->subset(1st::class, 2nd::class, 3rd::class))
 
 Thus reading the controller gives every programmer an idea which dependencies
 get injected. On the other hand reading the business api class constructor
-uncovers all dependencies of the business domain. This is as explicit as a good
+uncovers all dependencies of the business domain. This is as explicit as good
 architecture can get.
 
 In modern agile teams maybe the biggest advantage is that no programmer can
