@@ -17,48 +17,120 @@ $ composer install earc/di
 
 ## Basic Usage
 
-A new dependency container instance on the top level is always constructed with
-a null argument.  
+A new dependency container instance is always constructed with no arguments.
 
 ```php
 use eArc\di\DependencyContainer;
 
-$dc = new DependencyContainer(null);
+$dc = new DependencyContainer();
 ```
 
-The classes are accessed via the `get('classKey')` or `make('classKey')` method.
-`get` always returns the same instance whereas `make` returns each time a new
-instance.
+### Accessing instances
 
-There are three ways of dependency configuration.
-1. Via key names (class names).
-2. Using an inline factory (closure). 
-3. Direct instantiation.
+The class instances are accessed via the `get()` or `make()` method.
+`get()` always returns the same instance whereas `make()` returns a new instance
+on each call.
 
-### Configuration via key names
+```php
+$objBehavingLikeASingleton = $dc->get('classKeyString');
+$objBehavingLikeANormalNewClass = $dc->make('classKeyString');
+```
 
-The first argument references the key under which the configuration and possibly 
-the instance is accessed. It is always a string. If you have only one
-configuration of a class it is recommended to use `yourClassName::class`. The 
-second is an array of arguments. String arguments which are used as keys are 
-interpreted as references to an class instance. That is why you need to use an
-inline factory if you have arguments that exists as keys but need to be passed
-as strings to the constructor.  
+The parameter is the key string under which the instance is accessed. It is the 
+same key the configuration used. In most cases it is recommended to use 
+`className::class`.
+
+```php
+$objBehavingLikeASingleton = $dc->get(className::class);
+$objBehavingLikeANormalNewClass = $dc->make(className::class);
+```
+
+### Dependency Configuration 
+
+A dependency configuration of a single class consists of a key and a build
+instruction.  
+
+```php
+$dc->set('classKeyString', /* build instruction goes here */);
+```
+
+There are three types of build instructions:
+1. an configuration array of constructor arguments possibly including key 
+   names/class names
+2. an inline factory/closure
+3. the object itself
+
+#### Configuration via constructor arguments
+
+The usage of the configuration array is basically the same as using the `new`
+operator.
+
+```php
+$obj = new yourClassName(
+    'IAmOnlyAPlainString',
+    200,
+    ['An', 'Array', 'Of', '5', 'Strings'],
+    null
+);
+
+// is the same as 
+
+$dc->set(
+    yourClassName::class,
+    [
+        'IAmOnlyAPlainString',
+        200,
+        ['An', 'Array', 'Of', '5', 'Strings'],
+        null
+    ]
+);
+$obj = $dc->get(yourClassName::class);
+```
+
+The dependency magic comes into play if classes get instantiated by other
+classes. String arguments that are used as keys are interpreted as references to
+a class instance.
+
+```php
+$obj1 = new 1stClass(/* here goes the configuration */);
+
+$obj2 = new 2ndClass($obj1);
+
+// is the same as 
+
+$dc->set(1stClass::class, [/* here goes the configuration */]);
+
+$dc->set(2ndClass::class, [1stClass::class]);
+
+$obj2 = $dc->get(2ndClass::class);
+```
+
+As you might have guessed you can mix normal configuration and class names to
+your liking. 
 
 ```php
 $dc->set(
     yourClassName::class, 
     [
-        firstArgument::class, 
-        secondArgument::class, 
+        firstArgument::class,
         'IAmOnlyAPlainString', 
         100, 
-        ['An', 'Array', 'of', 'Strings']
+        fourthArgument::class,
+        ['An', 'Array', 'Of', 'Strings'],
+        null
     ]
 );
 ```
- 
-### Configuration using an inline factory
+
+In the case of dependency configuration via constructor arguments the use of the 
+PHP class name as key is mandatory. If you want to use another key you can use a
+factory.
+
+Since there is no way to distinct between a key and a string argument equal to 
+a key, you have to use a factory if you have arguments that exists as keys but
+need to be passed as strings to the constructor.
+
+#### Configuration using an inline factory
 
 If you need some calculation to get the constructor arguments right you can use 
 a closure as factory. The closure gets evaluated on the first call to the class.
@@ -67,8 +139,8 @@ a closure as factory. The closure gets evaluated on the first call to the class.
 $dc->set(
     yourClassName::class,
     function() {
-        ...do some calculation...
-        return new yourClassName(...the calculated arguments...);
+        //...do some calculation...
+        return new yourClassName(/*...the calculated arguments...*/);
     } 
 );
 ```
@@ -79,8 +151,8 @@ You can even use the dependency injection inside the factory.
 $dc->set(
     yourClassName::class,
     function() use ($dc) {
-        ...do some calculation with $dc->get(iNeedThisClass::class)->myMethod()...
-        return new yourClassName($dc->get(someDependency::class), ...the calculated arguments...);
+        //...do some calculation with $dc->get(iNeedThisClass::class)->myMethod()...
+        return new yourClassName($dc->get(someDependency::class), /*...the calculated arguments...*/);
     } 
 );
 ```
@@ -111,11 +183,11 @@ $dc->set(
 );
 ```
 
-### Configuration by direct instantiation
+#### Configuration by direct instantiation
 
-If object instantiation does not get in the way the eArc dependency container 
-can be used as plain container. Thus you can set your objects in the direct way.
-Please note that your object do not benefit of lazy instantiation using this.  
+The eArc dependency container can be used as plain container. Thus you can set
+your objects the direct way. Please note that a direct instantiated object does
+not benefit of lazy instantiation.   
 
 ```php
 $dc->set(
@@ -124,11 +196,15 @@ $dc->set(
 );
 ```
 
+Note: You can store everything except closures and arrays in the underlying
+plain container. Closures gets interpreted as inline factories and arrays will
+be read as configuration arrays.
+
 ### Using load
 
-If you need to set more than one class dependencies it is handy to use the load
-syntax. It is uses an array. The container keys are the array keys mapping to 
-the configuration array.  
+To set up a whole bunch of dependencies one by one is not convenient. The
+`load()` method uses the array syntax to get that job done faster and cleaner.
+The container keys are hereby the array keys mapping to the configuration array.  
 
 ```php
 $dc->load([
@@ -145,8 +221,8 @@ $dc->load([
 
 ### Loading configuration from file
 
-To load from file you save the configuration array to a file and reference it 
-via the `loadFile()` method.   
+To load the configuration from file simply save the configuration array to a
+file and reference it via the `loadFile()` method.   
 
 ```php
 $dc->loadFile('/absolute/path/to/some/file.conf');
@@ -180,8 +256,8 @@ existing one and an `E_USER_WARNING` is triggered.
 ### Tree typed dependencies
 
 There may be times when you need the same objects instantiated differently for
-different objects. You can hide this different dependencies behind a factory or
-make it explicit through the use of tree typed dependencies.
+different objects. You can hide the different dependencies behind a factory or
+make them explicit through the use of tree typed dependencies.
 
 Instead of only passing the `className::class` as configuration argument the 
 eArc dependency container accepts the `className::class` as key pointing to a
@@ -197,7 +273,7 @@ $dc->load([
 ]);
 ```
 
-Each class can thus be defined individually on a deeper level without harming
+Thus each class can be defined individually on a deeper level without harming
 the configuration on higher levels. You get a tree of dependencies corresponding
 to your nested configuration. That is a tree typed dependency configuration.   
 
@@ -237,11 +313,12 @@ strive.
 
 ### Subset generation
 
-It is a bad habit to inject the dependency container into the business classes.
-That way the dependencies get hidden and every programmer need to know the whole
-code to keep track of dependencies. On the other hand injecting the classes
-itself into the business api kills the benefits of lazy evaluation. To get the
-best of both worlds the eArc dependency container supports subset generation.
+Injecting the dependency container of the controller into the business classes 
+is a bad but unfortunate popular habit. At first sight it makes life easy, but
+it hides the dependencies and every programmer need to know the whole code to
+keep track of dependencies. On the other hand injecting the classes itself into
+the business api kills the benefits of lazy evaluation. To get the best of both
+worlds the eArc dependency container supports subset generation.
 
 ```php
 $dsc = $dc->subset(1st::class, 2nd::class, 3rd::class);
@@ -287,6 +364,10 @@ get injected. On the other hand reading the business api class constructor
 uncovers all dependencies of the business domain. This is as explicit as a good
 architecture can get.
 
+In modern agile teams maybe the biggest advantage is that no programmer can
+introduce a new dependency accidentally. Thus helping to keep the architectural
+design clean.
+
 (! Subset generation is not implemented yet.)
 
 ### Container merging
@@ -307,21 +388,22 @@ $dcAlmighty->merge($dc0, true);
 
 The second parameter is the overwrite flag.
 
-To save a few lines use the static `mergeAll` method.
+To save a few lines use the static `mergeAll()` method.
 
 ```php
 $dcAlmighty = DependencyContainer::mergeAll($dc0, $dc1, $dc2, $dc3);
 ```
 
-There exists no overwrite flag for the `mergeAll` method. The keys of the 
+There exists no overwrite flag for the `mergeAll()` method. The keys of the 
 container left hand are used in favour to the other. Thus the ordering enforce
 the key overwrite behaviour. 
 
 Since the keys of the ruling container only hold references but the referenced 
 elements remain in the original container you can even merge an php-di into an
-earc/di container without loosing the laziness.
+earc/di container without loosing the laziness of each one.
 
 Keep in mind that there is no real function forwarding. Only methods using same 
-function name and parameters as the eArc dependency container could be called. 
+function name and parameters as the eArc dependency container can be called
+savely. 
 
 (! Container merging is not implemented yet.)

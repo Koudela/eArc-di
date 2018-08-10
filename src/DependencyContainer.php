@@ -17,7 +17,7 @@ class DependencyContainer extends Container implements interfaces\DependencyCont
 {
     private $base;
 
-    public function __construct(?DependencyContainer $dc)
+    public function __construct(?DependencyContainer $dc = null)
     {
         parent::__construct();
         $this->base = ($dc === null ? $this : $dc->base);
