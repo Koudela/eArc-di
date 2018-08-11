@@ -21,6 +21,7 @@ class DependencyContainer extends Container implements interfaces\DependencyCont
     {
         parent::__construct();
         $this->base = ($dc === null ? $this : $dc->base);
+        $this->set(DependencyContainer::class, $this);
     }
 
     /**

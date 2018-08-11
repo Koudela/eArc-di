@@ -2,7 +2,7 @@
     "name": "earc/di",
     "description": "eArc - the explicit architecture framework - dependency injection container",
     "type": "library",
-    "version": "0.0.3",
+    "version": "0.1-rc",
     "require": {
         "php": "^7.2",
     	"psr/container": "^1.0.0"

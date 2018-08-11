@@ -23,6 +23,9 @@ generation, container merging, inline factories and dynamic configuration.
    - [Performance considerations](#performance-considerations)
    - [Subset generation](#subset-generation)
    - [Container merging](#container-merging)
+ - [Releases](#releases)
+   - [release v0.2 (not released yet)](#release-v02-not-released-yet)
+   - [release v0.1](#release-v01)
 
 ## Installation
 
@@ -32,6 +35,9 @@ framework, you can install the component via composer.
 ```
 $ composer install earc/di
 ```
+
+Hint: If you want to install the eArc framework use the
+[earc/minimal package](https://github.com/Koudela/eArc-minimal).
 
 ## Basic Usage
 
@@ -426,3 +432,15 @@ function name and parameters as the eArc dependency container can be called
 savely. 
 
 (! Container merging is not implemented yet.)
+
+
+## Releases
+
+### release v0.2 (not released yet)
+
+new features: subset generation, container merging
+
+### release v0.1
+
+the first official release
+
