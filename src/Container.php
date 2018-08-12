@@ -62,7 +62,7 @@ class Container implements ContainerInterface
      */
     public function getKeys(): array
     {
-        return array_keys($this->data, null, true);
+        return array_keys($this->data);
     }
 
     /**
