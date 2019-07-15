@@ -1,90 +1,129 @@
-# eArc di
+# earc/di
 
-Dependency injection component of the [eArc framework](https://github.com/Koudela/eArc-core).
+Dependency injection component of the 
+[earc framework](https://github.com/Koudela/eArc-core). earc/di can also be used 
+as standalone or in combination with other frameworks.
 
-The eArc dependency injection container is [psr-11](https://www.php-fig.org/psr/psr-11/)
-compatible, supports lazy instantiation, tree typed dependencies, subset 
-generation, container merging, inline factories and dynamic configuration.
+The earc dependency injection container is 
+[psr-11](https://www.php-fig.org/psr/psr-11/) compatible, supports lazy 
+instantiation, tree typed dependencies, container merging, factories and 
+dynamic configuration.
+
+If you need to decouple your components or want to make the dependencies of
+your apps components explicit use the 
+[earc/component-di container](https://github.com/Koudela/eArc-component-di).
  
- ## Table of Contents
+## table of contents
  
- - [Installation](#installation)
- - [Basic Usage](#basic-usage)
-   - [Accessing instances](#accessing-instances)
-   - [Dependency Configuration](#dependency-configuration)
-     - [Configuration via constructor arguments](#configuration-via-constructor-arguments)
-     - [Configuration using an inline factory](#configuration-using-an-inline-factory)
-     - [Configuration by direct instantiation](#configuration-by-direct-instantiation)
-   - [Using load](#using-load)
-   - [Loading configuration from file](#loading-configuration-from-file)
-   - [Overwriting existing dependencies](#overwriting-existing-dependencies)
- - [Advanced Usage](#advanced-usage)
-   - [Tree typed dependencies](#tree-typed-dependencies)
-   - [Performance considerations](#performance-considerations)
-   - [Subset generation](#subset-generation)
-   - [Container merging](#container-merging)
- - [Releases](#releases)
-   - [release v0.2 (not released yet)](#release-v02-not-released-yet)
+ - [installation](#installation)
+ - [basic usage](#basic-usage)
+ - [dependency configuration](#dependency-configuration)
+   - [configuration via constructor arguments](#configuration-via-constructor-arguments)
+   - [configuration using an factory](#configuration-using-an-factory)
+   - [configuration by direct instantiation](#configuration-by-direct-instantiation)
+   - [decoration of a class](#decoration-of-a-class)
+   - [using load](#using-load)
+ - [exceptions](#exceptions)
+ - [advanced usage](#advanced-usage)
+   - [flags](#flags)
+   - [tree typed dependencies](#tree-typed-dependencies)
+   - [container merging](#container-merging)
+   - [container merging at construction time](#container-merging-at-construction-time) 
+   - [performance considerations](#performance-considerations)
+   - [subset generation/decoupling dependencies](#subset-generationdecoupling-dependencies)
+ - [releases](#releases)
+   - [release v1.0](#release-v10-beta---develop-branch)
    - [release v0.1](#release-v01)
 
-## Installation
+## installation
 
-If you want to use the eArc dependency injection container without the eArc
-framework, you can install the component via composer.
+You can install the earc dependency injection container without the eArc
+framework via composer.
 
 ```
 $ composer install earc/di
 ```
 
-Hint: If you want to install the eArc framework use the
-[earc/minimal package](https://github.com/Koudela/eArc-minimal).
+## basic usage
 
-## Basic Usage
-
-A new dependency container instance is always constructed with no arguments.
+A new dependency container instance can be constructed with no arguments.
 
 ```php
-use eArc\di\DependencyContainer;
+use eArc\DI\DependencyContainer;
 
 $dc = new DependencyContainer();
 ```
 
-### Accessing instances
-
-The class instances are accessed via the `get()` or `make()` method.
-`get()` always returns the same instance whereas `make()` returns a new instance
-on each call.
+Container items can be classes or parameter. They are accessed via their name.
 
 ```php
-$objBehavingLikeASingleton = $dc->get('classKeyString');
-$objBehavingLikeANormalNewClass = $dc->make('classKeyString');
+$dc->has($itemName);
 ```
 
-The parameter is the key string under which the instance is accessed. It is the 
-same key the configuration used. In most cases it is recommended to use 
-`className::class`.
+Checks for existence of a container item.
 
 ```php
-$objBehavingLikeASingleton = $dc->get(className::class);
-$objBehavingLikeANormalNewClass = $dc->make(className::class);
+$dc->get($itemName);
 ```
 
-### Dependency Configuration 
-
-A dependency configuration of a single class consists of a key and a build
-instruction.  
+Retrieves the parameter or the object. If the item is a object `get()` behaves
+like calling a singleton, it always returns the same instance.
 
 ```php
-$dc->set('classKeyString', /* build instruction goes here */);
+$dc->make($itemName);
+```
+
+Retrieves a **_new_** **object** e.g. `make()` behaves like calling `new` for
+the class, it returns a new instance on each call.
+
+```php
+$dc->set($itemname, $parameterClosureOrConfiguration)
+```
+
+`set()` can be used to set a parameter or object dynamically. If the items name
+is not a class name or the item is neither an array nor a closure it is seen 
+as parameter.
+
+Hint: You can use an object as parameter if you neither need lazy instantiation
+nor `make()` for that type of object.
+
+```php
+$logger = new Monolog\Logger();
+
+$dc->set('logger', $logger);
+``` 
+
+If you overwrite an existing item `ItemOverwriteException` is thrown. If it is 
+by purpose you can catch the exception and go on as if it never happened. The 
+item is set before the exception gets thrown.
+
+Is the items name a class name and the item is an array the array is seen as
+list of arguments for the class.
+
+Is the items name a class name and the item is closure the closure is seen as 
+factory for the object. 
+
+Hint: You can use closures or objects to overwrite class name keys with the 
+wrong class object. That might be useful in some testing context or if you need
+to reference some objects by their extended child class in some extending app
+context (in symfony this is called decoration).
+
+## dependency configuration 
+
+A dependency configuration of a single class consists of the fully qualified
+class name as key and a build instruction.
+
+```php
+$dc->set(FooClass::class, /* build instruction goes here */);
 ```
 
 There are three types of build instructions:
-1. an configuration array of constructor arguments possibly including key 
-   names/class names
+1. an configuration array of constructor arguments including plain parameter,
+parameter names or class names
 2. an inline factory/closure
 3. the object itself
 
-#### Configuration via constructor arguments
+### configuration via constructor arguments
 
 The usage of the configuration array is basically the same as using the `new`
 operator.
@@ -96,9 +135,9 @@ $obj = new yourClassName(
     ['An', 'Array', 'Of', '5', 'Strings'],
     null
 );
-
-// is the same as 
-
+```
+is the same as 
+```php
 $dc->set(
     yourClassName::class,
     [
@@ -113,24 +152,26 @@ $obj = $dc->get(yourClassName::class);
 
 The dependency magic comes into play if classes get instantiated by other
 classes. String arguments that are used as keys are interpreted as references to
-a class instance.
+a parameter or a class instance.
 
 ```php
 $obj1 = new 1stClass(/* here goes the configuration */);
-
-$obj2 = new 2ndClass($obj1);
-
-// is the same as 
-
+$parameter = 'Hello World!'
+$obj2 = new 2ndClass($obj1, $parameter);
+```
+is the same as 
+```php
 $dc->set(1stClass::class, [/* here goes the configuration */]);
-
-$dc->set(2ndClass::class, [1stClass::class]);
+$dc->set(2ndClass::class, [1stClass::class, 'myParameter']);
+$dc->set('myParameter', 'Hello World!');
 
 $obj2 = $dc->get(2ndClass::class);
 ```
 
-As you might have guessed you can mix normal configuration and class names to
-your liking. 
+You can use the `set()` calls in any order you like.
+
+As you might have guessed you can mix direct parameters, parameter items and
+class names to your liking. 
 
 ```php
 $dc->set(
@@ -138,7 +179,7 @@ $dc->set(
     [
         firstArgument::class,
         'IAmOnlyAPlainString', 
-        100, 
+        'IAmAParameter', 
         fourthArgument::class,
         ['An', 'Array', 'Of', 'Strings'],
         null
@@ -146,25 +187,26 @@ $dc->set(
 );
 ```
 
-In the case of dependency configuration via constructor arguments the use of the 
-PHP class name as key is mandatory. If you want to use another key you can use a
-factory.
+In the case of class configuration via constructor arguments the use of the 
+fully qualified class name as key is mandatory. If you want to use another key 
+you can use a factory.
 
-Since there is no way to distinct between a key and a string argument equal to 
-a key, you have to use a factory if you have arguments that exists as keys but
-need to be passed as strings to the constructor.
+Hint: Since there is no way to distinct between a key and a string argument 
+equal to a key you have to use the argument via parameter if the string that 
+need to be passed to the constructor conflicts with an existing key.
 
-#### Configuration using an inline factory
+### configuration using an factory
 
 If you need some calculation to get the constructor arguments right you can use 
-a closure as factory. The closure gets evaluated on the first call to the class.
+a closure as factory. The closure gets evaluated on the first `get()` and
+on every `make()` call to the class.
 
 ```php
 $dc->set(
-    yourClassName::class,
+    yourClass::class,
     function() {
         //...do some calculation...
-        return new yourClassName(/*...the calculated arguments...*/);
+        return new yourClass(/*...the calculated arguments...*/);
     } 
 );
 ```
@@ -173,10 +215,10 @@ You can even use the dependency injection inside the factory.
 
 ```php
 $dc->set(
-    yourClassName::class,
+    yourClass::class,
     function() use ($dc) {
         //...do some calculation with $dc->get(iNeedThisClass::class)->myMethod()...
-        return new yourClassName($dc->get(someDependency::class), /*...the calculated arguments...*/);
+        return new yourClass($dc->get(someDependency::class), /*...the calculated arguments...*/);
     } 
 );
 ```
@@ -188,7 +230,7 @@ it in a closure.
 $dc->set(
     yourClassName::class,
     function() {
-        return yourFactoryClassName::factory();
+        return yourFactoryClassName::build();
     } 
 );
 ```
@@ -202,12 +244,12 @@ the `yourFactoryClassName::class` gets instantiated.
 $dc->set(
     yourClassName::class,
     function() use ($dc) {
-        return $dc->get(yourFactoryClassName::class)->factory();
+        return $dc->get(yourFactoryClassName::class)->build();
     } 
 );
 ```
 
-#### Configuration by direct instantiation
+### configuration by direct instantiation
 
 The eArc dependency container can be used as plain container. Thus you can set
 your objects the direct way. Please note that a direct instantiated object does
@@ -215,69 +257,97 @@ not benefit of lazy instantiation.
 
 ```php
 $dc->set(
-    yourClassName::class,
-    new yourClassName(...arguments go here...) 
+    yourClass::class,
+    new yourClass(...arguments go here...) 
 );
 ```
 
-Note: You can store everything except closures and arrays in the underlying
-plain container. Closures gets interpreted as inline factories and arrays will
-be read as configuration arrays.
+Hint: You can store everything in the underlying plain container. If you want
+to store a closure or an array and use a class name as key wrap them in a 
+closure.
 
-### Using load
+```php
+$dc->set(
+    FooReferencingAnClosure::class,
+    function() {
+        return function() {
+            // ... the closure body ...
+        }
+    }
+);
+
+$dc->set(
+    BarReferencingAnArray::class,
+    function() {
+        return [
+            // ... the array contents ...
+        ]
+    }
+);
+```
+
+### decoration of a class
+
+The best way of decorating a class is to use a closure as proxy:
+
+```php
+$dc->set(FooAsDecorator::class, /* configuration */);
+$dc->set(
+    BarAsDecorated::class,
+    function() use ($dc) {
+        return $dc->get(FooAsDecorator::class);
+    }
+)
+```
+
+## using load
 
 To set up a whole bunch of dependencies one by one is not convenient. The
 `load()` method uses the array syntax to get that job done faster and cleaner.
-The container keys are hereby the array keys mapping to the configuration array.  
+The item keys are hereby the array keys and the array values are mapped to the 
+item values.  
 
 ```php
 $dc->load([
-    firstClassName::class => [secondClassName::class, seventhClassName::class, ...],
-    secondClassName::class => function() {
-        return FactoryClassName::factory();
+    'firstParameter' => 42,
+    FirstClass::class => [SecondClass::class, SeventhClass::class, ...],
+    SecondClass::class => function() {
+        return FactoryClass::build();
     },
-    thirdClassName::class => [someOtherClass::class],
-    fourthClassName::class => [],
-    fifthClassName::class => ['I', 'have', 5, 'plain', 'arguments'],
+    ThirdClass::class => [SomeOtherClass::class],
+    FourthClass::class => ['firstParameter', 'iAmNotAParameterButAString'],
+    FifthClass::class => ['I', 'have', 5, 'plain', 'arguments'],
+    SomeOtherClass::class => [],
+    'secondParameter' => 23,
     ... 
 ]);
 ```
 
-### Loading configuration from file
+## exceptions
 
-To load the configuration from file simply save the configuration array to a
-file and reference it via the `loadFile()` method.   
+ * An `ItemNotFoundException` is thrown if the item does not exists or `make()` 
+ is called but there is no configuration for the class.
+ 
+ * An `InvalidFactoryException` if you call `make()` but the items name is not
+ a fully qualified class name.
 
-```php
-$dc->loadFile('/absolute/path/to/some/file.conf');
-```
+ * An `InvalidObjectConfigurationException` is thrown if the class is not 
+ configured properly.
+ 
+ * An `CircularDependencyException` is thrown if the classes configuration 
+ depends in some way on the class itself. If this exception is thrown in your 
+ app something is wrong with your dependency container configuration.
 
-The file need to return the configuration array.
+ * An `ItemOverwriteException` is thrown if the item name is already set. If 
+ it is by purpose you can catch the exception. The item is set before the
+ exception gets thrown.
 
-```php
-<?php
 
-// you may do some calculation here
+## advanced usage  
 
-return [
-    firstClassName::class => [secondClassName::class, seventhClassName::class],
-    secondClassName::class => function() {
-        return FactoryClassName::factory();
-    },
-    thirdClassName::class => [someOtherClass::class],
-    fourthClassName::class => [],
-    fifthClassName::class => ['I', 'have', 5, 'plain', 'arguments']
-];
-```
+### flags
 
-### Overwriting existing dependencies
-
-If you set an already existing dependency key the new dependency overwrites the
-existing one and an `E_USER_WARNING` is triggered. 
-
-## Advanced Usage  
-
-### Tree typed dependencies
+### tree typed dependencies
 
 There may be times when you need the same objects instantiated differently for
 different objects. You can hide the different dependencies behind a factory or
@@ -290,9 +360,9 @@ separate configuration.
 ```php
 $dc->load([
     A::class => ['majorConfigurationString'],
-    B::class => [A:class],
+    B::class => [A::class],
     C::class => [
-        A:class => ['minorConfiguration']
+        A::class => ['minorConfiguration']
     ]
 ]);
 ```
@@ -326,76 +396,7 @@ the example the `B1::class` uses the `D::class` configuration wrapped in
 `A::class` whereas `E::class` uses the `D::class` configuration at the top 
 level.
 
-### Performance considerations
-
-Even though there is a performance gain through lazy evaluated dependencies
-the configuration of the unused classes is parsed and loaded into memory by PHP.
-Therefore it is a good practice to separate the configuration of the different
-business domains and load them in a lazy manner too. You need a clear
-architecture to do this properly. The eArc framework supports you in this
-strive.
-
-### Subset generation
-
-Injecting the dependency container of the controller into the business classes 
-is a bad but unfortunate popular habit. At first sight it makes life easy, but
-it hides the dependencies and every programmer need to know the whole code to
-keep track of dependencies. On the other hand injecting the classes itself into
-the business api kills the benefits of lazy evaluation. To get the best of both
-worlds the eArc dependency container supports subset generation.
-
-```php
-$dsc = $dc->subset(1st::class, 2nd::class, 3rd::class);
-```
-
-`$dsc` is a new dependency container and if you define new dependencies the 
-original container is unaffected, but `1st::class`, `2nd::class` and 
-`3rd::class` reference the configuration and the instances in the original `$dc`
-container thus keeping the overhead minimal.
-
-To check the subset condition use the `hasExact()` method.
-
-Imagine the constructor code of an business domain api:
-
-```php
-protected $apiDC;
-
-pubilc function __construct(\eArc\dc\DependencyContainer $dc)
-{
-    if (!$dc->hasExact(1st::class, 2nd::class, 3rd::class)) {
-        throw new \Exception(
-            'The dependency container violates the subset condition: ' . 
-            1st::class . ', ' . 
-            2nd::class . ', ' . 
-            3rd::class
-        )
-    }
-    $apiDC = $dc;
-    $apiDC->load([
-        // ...the dependency configuration only relevant to the business domain
-        // itself goes here...
-    ]);
-}
-```
-
-On the controller side there may be something like:
-
-```php
-$api = new oneOfMyBuisinessApis($dc->subset(1st::class, 2nd::class, 3rd::class));
-```
-
-Thus reading the controller gives every programmer an idea which dependencies
-get injected. On the other hand reading the business api class constructor
-uncovers all dependencies of the business domain. This is as explicit as good
-architecture can get.
-
-In modern agile teams maybe the biggest advantage is that no programmer can
-introduce a new dependency accidentally. Thus helping to keep the architectural
-design clean.
-
-(! Subset generation is not implemented yet.)
-
-### Container merging
+### container merging
 
 Consider an third party api that does not get an dependency container injected 
 but returns one. Consider you need to write code that uses several of such
@@ -404,43 +405,138 @@ At this stage container merging comes into play. Creating one to rule them all
 makes your live easy again.    
 
 ```php
-$dcAlmighty = new DependencyContainer(null);
-$dcAlmighty->merge($dc1, false);
-$dcAlmighty->merge($dc2, false);
-$dcAlmighty->merge($dc3, false);
-$dcAlmighty->merge($dc0, true);
+$dcAlmighty = new DependencyContainer();
+$dcAlmighty->merge($dc1);
+$dcAlmighty->merge($dc2);
+$dcAlmighty->merge($dc3);
+$dcAlmighty->merge($dc0);
 ```
 
-The second parameter is the overwrite flag.
+Since the ruling container only hold references but the referenced elements 
+remain in the original container you can even merge an php-di/php-di container 
+into an earc/di container without loosing the laziness of each one.
 
-To save a few lines use the static `mergeAll()` method.
+The container need to implement the psr `ContainerInterface`. This interface
+only supports `has()` and `get()`. Hence if you want to use `make()` the 
+container has to implement the earc `DependencyInjectionInterface`. Container
+who does not support the earc `DependencyInjectionInterface` but support a 
+`make()` method like php-di/php-di need a wrapper/proxy for using `make()` in 
+the merged state.
+ 
+```php
+use eArc\DI\Interfaces\DependencyInjectionInterface;
+use Psr\Container\ContainerInterface;
+
+class DICWrapper implements DependencyInjectionInterface
+{
+    protected $container;
+    
+    public function __construct(ContainerInterface $container)
+    {
+        $this->container = $container
+    }
+    
+    public function has()
+    {
+        return $this->container->has();
+    }
+    
+    public function get()
+    {
+        return $this->container->get();
+    }
+    
+    public function make()
+    {
+        return $this->container->makeFunctionOfContainer();
+    }
+}
+```
 
 ```php
-$dcAlmighty = DependencyContainer::mergeAll($dc0, $dc1, $dc2, $dc3);
+$foreignContainer = ForeignContainerFactory::build(/* ... configuration ... */);
+$wrappedForeignContainer = new DICWrapper($foreignContainer);
+
+$dc->merge($wrappedForeignContainer);
+
+$fooObject = $dc->make(FooFromForeignContainer::class);
 ```
 
-There exists no overwrite flag for the `mergeAll()` method. The keys of the 
-container left hand are used in favour to the other. Thus the ordering enforce
-the key overwrite behaviour. 
+#### container merging at construction time
 
-Since the keys of the ruling container only hold references but the referenced 
-elements remain in the original container you can even merge an php-di into an
-earc/di container without loosing the laziness of each one.
+Some advanced usages (like 
+[earc/components-di](https://github.com/Koudela/eArc-component-di)) need a 
+mechanism to provide some object getters only at construction time of an object.
+To use this container merging at construction time pass an closure to the
+container as second construction argument.
 
-Keep in mind that there is no real function forwarding. Only methods using same 
-function name and parameters as the eArc dependency container can be called
-savely. 
+```php
+use eArc\DI\DependencyContainer;
+use eArc\PayloadContainer\Exceptions\ItemNotFoundException;
 
-(! Container merging is not implemented yet.)
+$otherContainer = // ... configuration ...
 
+$dc = new DependencyContainer(null, function(&$nameReturnsObjectOrParameter) use ($otherContainer) {
+    if ($otherContainer->has($nameReturnsObjectOrParameter) {
+        $nameReturnsObjectOrParameter = $otherContainer->get($nameReturnsObjectOrParameter);
+        
+        return true; 
+    }
+    
+    return false;
+});
+``` 
 
-## Releases
+### performance considerations
 
-### release v0.2 (not released yet)
+Objects retrieved by `get()` can not be garbage collected until the dependency
+container is not referenced any more. If you use an object only once or for a 
+tiny moment it might save a bit of memory if you use `make()` instead. (Hint:
+`make()` uses `get()` for its dependencies to reduce the calculation and 
+configuration overhead. There is no way to circumvent this behaviour by 
+now/version 1.0.) 
 
-new features: subset generation, container merging
+Even though there is a performance gain through lazy evaluated dependencies
+the configuration of the unused classes is parsed and loaded into memory by PHP.
+Therefore it is a good practice to separate the configuration of the different
+business domains and load them in a lazy manner too. You can dynamically call
+load to achieve this or use
+[earc/components-di](https://github.com/Koudela/eArc-component-di).
+
+### subset generation/decoupling dependencies
+
+Injecting the dependency container of the controller into the business classes 
+is a bad but unfortunate popular habit. At first sight it makes life easy, but
+it hides the dependencies and every programmer need to know the whole code to
+keep track of dependencies. On the other hand injecting the classes itself into
+the business api kills the benefits of lazy evaluation. To get the best of both
+worlds the earc dependency container supports subset generation.
+
+The aim of subset generation was given up. You can achieve something similar
+using [earc/components-di](https://github.com/Koudela/eArc-component-di).
+
+In modern agile teams maybe the biggest advantage is that no programmer can
+introduce a new dependency accidentally. Thus helping to keep the architectural
+design clean.
+
+## releases
+
+### release v1.0
+
+* support for flags.
+
+* support for container merging and container merging at construction time only.
+
+* announced new feature subset generation is dropped in favour of 
+[earc/components-di](https://github.com/Koudela/eArc-component-di)
+
+* `NotFoundException` and `OverwriteException` dropped in favour of 
+`ItemNotFoundException` and `ItemOverwriteException` from the 
+[earc/payload-container package](https://github.com/Koudela/eArc-payload-container).
+
+* `DependencyContainer::loadFile()` is no longer supported. You can emulate it 
+by `DependencyContainer::load(include ...)`.
 
 ### release v0.1
 
 the first official release
-
