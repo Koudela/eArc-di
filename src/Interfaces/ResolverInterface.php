@@ -43,6 +43,12 @@ interface ResolverInterface
      * Returns a new instance of the class identified by its fully qualified class
      * name.
      *
+     * Implementation detail: The Resolver must not save a reference on the returned
+     * object.
+     *
+     * Hint: Use `make` instead of `get` if you need garbage collection for your
+     * object.
+     *
      * @param string $fQCN Identifier of the class to create a new instance for.
      *
      * @return object The new instance.
