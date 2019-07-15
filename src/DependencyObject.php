@@ -1,95 +1,162 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * e-Arc Framework - the explicit Architecture Framework
+ * dependency injection component
  *
  * @package earc/di
- * @link https://github.com/Koudela/earc-di/
- * @copyright Copyright (c) 2018 Thomas Koudela
+ * @link https://github.com/Koudela/eArc-di/
+ * @copyright Copyright (c) 2018-2019 Thomas Koudela
  * @license http://opensource.org/licenses/MIT MIT License
  */
 
-namespace eArc\di;
+namespace eArc\DI;
 
-/**
- * @inheritDoc
- */
-class DependencyObject implements interfaces\DependencyObjectInterface
+use eArc\Container\Exceptions\ItemNotFoundException;
+use eArc\DI\Exceptions\InvalidFactoryException;
+use eArc\DI\Exceptions\CircularDependencyException;
+use eArc\DI\Exceptions\InvalidObjectConfigurationException;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use \Throwable;
+
+class DependencyObject
 {
-    protected $dc;
-    protected $base;
-    protected $name;
+    /** @var string|callable */
+    protected $factory;
+
+    /** @var mixed[] */
     protected $config;
-    protected $instance;
+
+    /** @var DependencyResolver */
+    protected $dependencyResolver;
+
+    /** @var bool|object|null */
+    protected $instance = false;
+
+    /** @var bool */
+    protected $buildIsInProgress = false;
 
     /**
-     * @inheritDoc
+     * @param string|callable    $factory The class name of the enclosed object
+     * or a factory.
+     * @param array              $config The configuration for the enclosed
+     * object.
+     * @param DependencyResolver $dependencyResolver
+     *
+     * @throws InvalidFactoryException
      */
-    public function __construct(string $name, $config, DependencyContainer $dc, DependencyContainer $base)
+    public function __construct(
+        $factory,
+        array &$config,
+        DependencyResolver $dependencyResolver)
     {
-        $this->dc = $dc;
-        $this->base = $base;
-        $this->name = $name;
+        if ((!is_string($factory) || !class_exists($factory)) && !is_callable($factory)) {
+            throw new InvalidFactoryException();
+        }
+        $this->factory = $factory;
         $this->config = $config;
+        $this->dependencyResolver = $dependencyResolver;
     }
 
     /**
-     * @inheritDoc
+     * Get an instance.
+     *
+     * @return object|null
+     *
+     * @throws CircularDependencyException
+     * @throws InvalidObjectConfigurationException
      */
-    final public function getInstance(): object
+    public function get(): ?object
     {
-        if (!isset($this->instance)) {
-            $this->instance = $this->makeInstance();
+        if (false === $this->instance) {
+            $this->instance = $this->make();
         }
 
         return $this->instance;
     }
 
     /**
-     * @inheritDoc
+     * @noinspection PhpDocMissingThrowsInspection
+     *
+     * Get a new instance.
+     *
+     * @return object|null
+     *
+     * @throws CircularDependencyException
+     * @throws InvalidObjectConfigurationException
      */
-    final public function makeInstance(): object
+    public function make(): ?object
     {
-        if ($this->config instanceof \Closure) {
-            return ($this->config)();
-        }
+        try {
+            $args = $this->calculateArguments();
 
-        if (!is_array($this->config)) {
-            return $this->config;
-        }
+            if (is_callable($this->factory)) {
+                return ($this->factory)(...$args);
+            }
 
-        if (\count($this->config) === 0) {
-            return new $this->name();
-        }
+            $className = $this->factory;
+            return new $className(...$args);
 
-        return new $this->name(...$this->calculateArguments($this->config));
+        } catch (Throwable $throwable) {
+            if ($throwable instanceof CircularDependencyException) {
+                /** @noinspection PhpUnhandledExceptionInspection */
+                throw $throwable;
+            }
+            throw new InvalidObjectConfigurationException(
+                $throwable->getMessage(),
+                $throwable->getCode(),
+                $throwable
+            );
+        }
     }
 
     /**
      * Calculate the arguments for the enclosed object.
      *
-     * @param array $config
-     * @return array
+     * @return mixed[]
+     *
+     * @throws ItemNotFoundException
+     * @throws CircularDependencyException
+     * @throws InvalidObjectConfigurationException
+     * @throws NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
      */
-    private function calculateArguments(array $config): array
+    protected function calculateArguments(): array
     {
-        $args = [];
-
-        foreach ($config as $key => $item)
-        {
-            if (\is_string($item) && $this->base->has($item)) {
-                $args[] = $this->base->get($item);
-                continue;
-            }
-
-            if (\is_string($key) && \is_array($item)) {
-                $this->dc->set($key, $item);
-                $args[] = $this->dc->get($key);
-                continue;    
-            }
-
-            $args[] = $item;
+        if (empty($this->config)) {
+            return [];
         }
 
+        if ($this->buildIsInProgress) {
+            throw new CircularDependencyException();
+        }
+
+        $this->buildIsInProgress = true;
+
+        $args = [];
+
+        foreach ($this->config as $key => $item) {
+            if (!is_string($key)) {
+                if (!is_string($item) || !$this->dependencyResolver->hasFromAll($item)) {
+                    $args[] = $item;
+                    continue;
+                }
+                $key = $item;
+            }
+
+            $args[] = $this->dependencyResolver->getFromAll($key);
+        }
+
+        $this->buildIsInProgress = false;
+
         return $args;
+    }
+
+    /**
+     * @return DependencyResolver
+     */
+    public function getDependencyResolver(): DependencyResolver
+    {
+        return $this->dependencyResolver;
     }
 }

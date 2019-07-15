@@ -1,74 +1,149 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * e-Arc Framework - the explicit Architecture Framework
+ * dependency injection component
  *
  * @package earc/di
- * @link https://github.com/Koudela/earc-di/
- * @copyright Copyright (c) 2018 Thomas Koudela
+ * @link https://github.com/Koudela/eArc-di/
+ * @copyright Copyright (c) 2018-2019 Thomas Koudela
  * @license http://opensource.org/licenses/MIT MIT License
  */
 
-namespace eArc\di;
+namespace eArc\DI;
 
-/**
- * Container with support of lazy dependency injection.
- */
-class DependencyContainer extends Container implements interfaces\DependencyContainerUsageInterface, interfaces\DependencyContainerConfigurationInterface
+use eArc\Container\Exceptions\ItemNotFoundException;
+use eArc\DI\Exceptions\CircularDependencyException;
+use eArc\DI\Exceptions\InvalidFactoryException;
+use eArc\DI\Exceptions\InvalidObjectConfigurationException;
+use eArc\DI\Interfaces\ContainerCollectionInterface;
+use eArc\DI\Interfaces\DependencyContainerInterface;
+use eArc\DI\Support\ContainerCollection;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\ContainerInterface;
+use Psr\Container\NotFoundExceptionInterface;
+
+class DependencyContainer implements DependencyContainerInterface, ContainerCollectionInterface
 {
-    private $base;
+    /** @var DependencyResolver */
+    protected $dependencyResolver;
 
-    public function __construct(?DependencyContainer $dc = null)
+    /** @var ContainerCollection */
+    protected $mergedContainer;
+
+    /**
+     * @param DependencyResolver $dependencyResolver
+     * @param ContainerCollection $mergedContainer
+     *
+     * @throws CircularDependencyException
+     * @throws InvalidFactoryException
+     * @throws InvalidObjectConfigurationException
+     */
+    public function __construct(
+        DependencyResolver $dependencyResolver = null,
+        ContainerCollection $mergedContainer = null)
     {
-        parent::__construct();
-        $this->base = ($dc === null ? $this : $dc->base);
-        $this->set(DependencyContainer::class, $this);
+        $this->dependencyResolver = $dependencyResolver ?? new DependencyResolver();
+        $this->mergedContainer = $mergedContainer ?? new ContainerCollection();
     }
 
     /**
-     * @inheritDoc
+     * Load the configuration into the dependency container for lazy resolving.
+     *
+     * @param array $config
+     * @param array $flags
+     *
+     * @throws CircularDependencyException
+     * @throws InvalidFactoryException
+     * @throws InvalidObjectConfigurationException
      */
-    public function load(array $config): void
+    public function load(array $config, $flags = []): void
     {
-        foreach ($config as $className => $conf)
-        {
-            $this->set($className, $conf);
+        $this->dependencyResolver->load($config, $flags);
+    }
+
+    /**
+     * Merge a psr-11 compatible container object into the dependency container.
+     * The new items get looked up by has or get if the lookup in the local
+     * dependency container fails. (There is no make support for these
+     * containers and they will not get used for building new objects.)
+     *
+     * @param ContainerInterface $container
+     */
+    public function merge(ContainerInterface $container): void
+    {
+        $this->mergedContainer->merge($container);
+    }
+
+    /**
+     * Set a dependency container item vor lazy resolving. If an item with the
+     * same name is set already it gets overwritten.
+     *
+     * @param $name
+     * @param $item
+     *
+     * @throws CircularDependencyException
+     * @throws InvalidFactoryException
+     * @throws InvalidObjectConfigurationException
+     */
+    public function set($name, $item): void
+    {
+        $this->dependencyResolver->set($name, $item);
+    }
+
+    /**
+     * Check whether the dependency container has an item.
+     *
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function has($name): bool
+    {
+        return $this->dependencyResolver->has($name) || $this->mergedContainer->has($name);
+    }
+
+    /**
+     * Get an item from the dependency container.
+     *
+     * @param string $name
+     *
+     * @return mixed
+     *
+     * @throws CircularDependencyException
+     * @throws InvalidObjectConfigurationException
+     * @throws NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     */
+    public function get($name)
+    {
+        if ($this->dependencyResolver->has($name)) {
+            return $this->dependencyResolver->get($name);
         }
+
+        return $this->mergedContainer->get($name);
     }
 
     /**
-     * @inheritDoc
+     * Get a new item instance from the dependency container.
+     *
+     * @param string $name
+     *
+     * @return object
+     *
+     * @throws ItemNotFoundException
+     * @throws CircularDependencyException
+     * @throws InvalidObjectConfigurationException
      */
-    public function loadFile(string $filename): void
+    public function make(string $name): object
     {
-        $this->load(require $filename);
+        return $this->dependencyResolver->make($name);
     }
 
     /**
-     * @inheritDoc
+     * Removes all merged container.
      */
-    public function set(string $id, $config): void
+    public function reset(): void
     {
-        if (parent::has($id)) {
-            \trigger_error('Overwrite of existing $id', E_USER_WARNING);
-        }
-
-        parent::set($id, new DependencyObject($id, $config, $this, $this->base));
-        
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function get($id): object
-    {
-        return parent::get($id)->getInstance();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function make($id): object
-    {
-        return parent::get($id)->makeInstance();        
+        $this->mergedContainer = [];
     }
 }

@@ -2,10 +2,13 @@
     "name": "earc/di",
     "description": "eArc - the explicit architecture framework - dependency injection container",
     "type": "library",
-    "version": "0.1",
+    "version": "1.0",
+    "minimum-stability": "dev",
+    "prefer-stable" : true,
     "require": {
         "php": "^7.2",
-    	"psr/container": "^1.0.0"
+    	"psr/container": "^1.0.0",
+        "earc/container": "^0.1"
     },
     "license": "MIT",
     "authors": [
@@ -16,7 +19,12 @@
     ],
     "autoload": {
         "psr-4" : {
-            "eArc\\di\\" : "src"
+            "eArc\\DI\\" : "src",
+            "eArc\\DITests\\" : "tests"
         }
+    },
+    "require-dev": {
+        "behat/behat": "^3.5",
+        "phpunit/phpunit": "^7.5"
     }
 }

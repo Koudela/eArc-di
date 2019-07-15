@@ -1,0 +1,6 @@
+default:
+  suites:
+    default:
+      paths: [ "%paths.base%/tests/features" ]
+      contexts:
+        - eArc\DITests\env\FeatureContext
