@@ -11,12 +11,9 @@
 
 namespace eArc\DI\Exceptions;
 
-use Psr\Container\ContainerExceptionInterface;
-use Exception;
-
 /**
- * Generic dependency container exception
+ * This exception is thrown if it is not possible to instantiate the class.
  */
-class DependencyContainerException extends Exception implements ContainerExceptionInterface
+class MakeClassException extends Exception
 {
 }

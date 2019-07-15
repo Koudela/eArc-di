@@ -12,9 +12,9 @@
 namespace eArc\DI\Exceptions;
 
 /**
- * The configuration for the objects the resolved object depends on depends on
- * the object itself.
+ * This exception is thrown if it is not possible to execute the callables attached
+ * to a class.
  */
-class CircularDependencyException extends DependencyContainerException
+class ExecuteCallableException extends Exception
 {
 }

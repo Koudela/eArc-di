@@ -1,3 +1,12 @@
+#TODO
+
+- REWRITE DOCUMENTATION!
+- REWRITE TESTS
+
+Circular dependency Exception:
+```
+$ PHP Fatal error:  Uncaught Error: Maximum function nesting level of '256' reached, aborting! 
+```
 # earc/di
 
 Dependency injection component of the 

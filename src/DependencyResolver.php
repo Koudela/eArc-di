@@ -11,338 +11,178 @@
 
 namespace eArc\DI;
 
-use eArc\Container\Exceptions\ItemNotFoundException;
-use eArc\Container\Items;
-use eArc\DI\Exceptions\CircularDependencyException;
-use eArc\DI\Exceptions\InvalidFactoryException;
-use eArc\DI\Exceptions\InvalidObjectConfigurationException;
-use eArc\DI\Interfaces\Flags;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
+use eArc\DI\Exceptions\ClassNotFoundException;
+use eArc\DI\Exceptions\ExecuteCallableException;
+use eArc\DI\Exceptions\MakeClassException;
+use eArc\DI\Interfaces\ResolverCallableInterface;
+use eArc\DI\Interfaces\ResolverInterface;
+use Exception;
 
-class DependencyResolver
+abstract class DependencyResolver implements ResolverInterface
 {
-    /** @var DependencyResolver|null */
-    protected $parent;
+    protected static $instance = [];
+    protected static $decorator = [];
+    protected static $callables = [];
 
-    /** @var ContainerInterface|null */
-    protected $readOnlyContainer;
-
-    /** @var Items */
-    protected $items;
-
-    /**
-     * @param array $config
-     * @param DependencyResolver|null $parent
-     * @param ContainerInterface $readOnlyContainer
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
-     */
-    public function __construct(
-        $config = [],
-        DependencyResolver $parent = null,
-        ContainerInterface $readOnlyContainer = null)
+    public static function get(string $fQCN): object
     {
-        $this->parent = $parent;
-        $this->readOnlyContainer = $readOnlyContainer;
-        $this->items = new Items();
-        $this->load($config);
+        if (isset(self::$decorator[$fQCN])) {
+            return self::get(self::$decorator[$fQCN]);
+        }
+
+        if (!isset(self::$instance[$fQCN])) {
+            self::$instance[$fQCN] = self::make($fQCN);
+        }
+
+        return self::$instance[$fQCN];
     }
 
-    /**
-     * Load the configuration into the dependency resolver for lazy
-     * instantiation.
-     *
-     * @param array $config
-     * @param array $flags
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
-     */
-    public function load(array &$config, array $flags = []): void
+    public static function make(string $fQCN): object
     {
-        foreach ($config as $name => $item) {
-            $this->set($name, $item, $flags);
+        if (isset(self::$decorator[$fQCN])) {
+            return self::make(self::$decorator[$fQCN]);
+        }
+
+        if (!self::has($fQCN)) {
+            throw new ClassNotFoundException(sprintf('%s is no fully qualified class name.', $fQCN));
+        }
+
+        try {
+            $class = new $fQCN();
+        } catch (Exception $e) {
+            throw new MakeClassException($e->getMessage(), $e->getCode(), $e);
+        }
+            self::executeCallables($class, $fQCN);
+
+            return $class;
+    }
+
+
+    public static function has(string $fQCN): bool
+    {
+        return class_exists($fQCN);
+    }
+
+    public static function clearCache(string $fQCN=null): void
+    {
+        if (null === $fQCN) {
+            self::$instance = [];
+        } else {
+            unset(self::$instance[$fQCN]);
         }
     }
 
-    /**
-     * Set an dependency resolver item vor lazy instantiation. If an item with
-     * the same name is set already it gets overwritten.
-     *
-     * @param string|int $name
-     * @param mixed      $item
-     * @param array      $flags
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
-     */
-    public function set($name, &$item, array $flags = []): void
+    public static function decorate(string $fQCN, string $fQCNReplacement): void
     {
-        $flags = $this->getFlagsFromClass($name) + $flags;
-
-        if (is_array($item) && isset($item[Flags::class])) {
-            $flags = $item[Flags::class] + $flags;
+        if (!self::has($fQCN)) {
+            throw new ClassNotFoundException(sprintf('%s is no fully qualified class name.', $fQCN));
         }
 
-        if (isset($flags[Flags::ITEM_KEY])) {
-            $name = $flags[Flags::ITEM_KEY];
+        if (!self::has($fQCNReplacement)) {
+            throw new ClassNotFoundException(sprintf('%s is no fully qualified class name.', $fQCNReplacement));
         }
 
-        if (!isset($flags[Flags::CLASS_NAME]) || !is_array($item)
-            || isset($flags[Flags::DO_NOT_RESOLVE]) && $flags[Flags::DO_NOT_RESOLVE]) {
-            if (is_string($name) && (!isset($flags[Flags::SAVE_NO_REFERENCE]) || !$flags[Flags::SAVE_NO_REFERENCE])) {
-                if (is_array($item)) {
-                    unset($item[Flags::class]);
+        self::$decorator[$fQCN] = $fQCNReplacement;
+        unset(self::$instance[$fQCN]);
+    }
+
+    public static function isDecorated(string $fQCN): bool
+    {
+        if (!self::has($fQCN)) {
+            throw new ClassNotFoundException(sprintf('%s is no fully qualified class name.', $fQCN));
+        }
+
+        return isset(self::$decorator[$fQCN]);
+    }
+
+    public static function getDecorator(string $fQCN): string
+    {
+        if (!self::isDecorated($fQCN)) {
+            throw new ClassNotFoundException(sprintf('%s is not a decorated class.', $fQCN));
+        }
+
+        return self::$decorator[$fQCN];
+    }
+
+    public static function registerCallable(ResolverCallableInterface $callable): void
+    {
+        self::$callables[$callable->getClassName()][] = $callable;
+    }
+
+    public static function hasRegisteredCallables(string $fQCN=null, array $tags=[]): bool
+    {
+        if (empty($tags)) {
+            return null !== $fQCN ? isset(self::$callables[$fQCN]) : !empty(self::$callables);
+        }
+
+        $callables = null !== $fQCN ? [self::$callables[$fQCN]] : self::$callables;
+
+        foreach ($callables as $classCallables) {
+            foreach ($classCallables as $callable) {
+                if ($callable->isTaggedBy($tags)) {
+                    return true;
                 }
-                $this->items->overwrite($name, $item);
             }
-            return;
         }
-
-        unset($item[Flags::class]);
-
-        $dependencyObject = new DependencyObject(
-            isset($flags[Flags::FACTORY]) ? $flags[Flags::FACTORY] : $flags[Flags::CLASS_NAME],
-            $item,
-            $this->newChild($item)
-        );
-
-        if (isset($flags[Flags::INSTANT_MAKE]) && $flags[Flags::INSTANT_MAKE]) {
-            $dependencyObject->get();
-        }
-
-        if (isset($flags[Flags::SAVE_NO_REFERENCE]) && $flags[Flags::SAVE_NO_REFERENCE]) {
-            return;
-        }
-
-        $this->items->overwrite($name, $dependencyObject);
-    }
-
-    /**
-     * Get the flags from the class definition.
-     *
-     * @param string $name
-     *
-     * @return array|null
-     */
-    protected function getFlagsFromClass($name): array
-    {
-        if (!is_string($name) || !class_exists($name)) {
-            return [];
-        }
-
-        /** @noinspection PhpUndefinedMethodInspection */
-        $flags = is_subclass_of($name, Flags::class) ? $name::getDependencyInjectionFlags() : [];
-
-        if (!isset($flags[Flags::CLASS_NAME])) {
-            $flags[Flags::CLASS_NAME] = $name;
-        }
-
-        return $flags;
-    }
-
-    /**
-     * Get the parent of the dependency resolver or null if it has no parent.
-     *
-     * @return DependencyResolver|null
-     */
-    public function getParent(): ?DependencyResolver
-    {
-        return $this->parent;
-    }
-
-    /**
-     * Get a new child dependency resolver.
-     *
-     * @param array $config
-     *
-     * @return DependencyResolver
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
-     */
-    public function newChild(array $config): DependencyResolver
-    {
-        return new DependencyResolver($config, $this, $this->readOnlyContainer);
-    }
-
-    /**
-     * Check whether the current dependency resolver has an item.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    public function hasLocal(string $name): bool
-    {
-        return $this->items->has($name);
-    }
-
-    /**
-     * Get an item from the current dependency resolver.
-     *
-     * @param string $name
-     *
-     * @return mixed
-     *
-     * @throws ItemNotFoundException
-     * @throws CircularDependencyException
-     * @throws InvalidObjectConfigurationException
-     */
-    public function getLocal(string $name)
-    {
-        $item = $this->items->get($name);
-
-        if (is_callable($item)) {
-            return $item();
-        }
-
-        if ($item instanceof DependencyObject) {
-            return $item->get();
-        }
-
-        return $item;
-    }
-
-    /**
-     * Get a new item instance from the current dependency resolver.
-     *
-     * @param string $className
-     *
-     * @return object
-     *
-     * @throws ItemNotFoundException
-     * @throws CircularDependencyException
-     * @throws InvalidObjectConfigurationException
-     */
-    public function makeLocal(string $className): object
-    {
-        $item = $this->items->get($className);
-
-        if (is_callable($item)) {
-            return $item();
-        }
-
-        if ($item instanceof DependencyObject) {
-            return $item->make();
-        }
-
-        throw new InvalidObjectConfigurationException(sprintf(
-            '`%s` is not configured for make().',
-            $className)
-        );
-    }
-
-    /**
-     * Check whether the dependency resolver chain has an item.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    public function has(string $name): bool
-    {
-        $dependencyResolver = $this;
-
-        do {
-            if ($dependencyResolver->hasLocal($name)) {
-                return true;
-            }
-        } while ($dependencyResolver = $dependencyResolver->getParent());
 
         return false;
     }
 
-    /**
-     * Get an item from the dependency resolver chain.
-     *
-     * @param string $name
-     *
-     * @return mixed
-     *
-     * @throws ItemNotFoundException
-     * @throws CircularDependencyException
-     * @throws InvalidObjectConfigurationException
-     */
-    public function get(string $name)
+    public static function executeCallables(object $class, string $fQCN, array $tags=[]): void
     {
-        $dependencyResolver = $this;
-
-        do {
-            if ($dependencyResolver->hasLocal($name)) {
-                return $dependencyResolver->getLocal($name);
-            }
-        } while ($dependencyResolver = $dependencyResolver->getParent());
-
-        throw new ItemNotFoundException($name);
-    }
-
-    /**
-     * Get a new item instance from the dependency resolver chain.
-     *
-     * @param string $name
-     *
-     * @return object
-     *
-     * @throws ItemNotFoundException
-     * @throws CircularDependencyException
-     * @throws InvalidObjectConfigurationException
-     */
-    public function make(string $name): object
-    {
-        $dependencyResolver = $this;
-
-        do {
-            if ($dependencyResolver->hasLocal($name)) {
-                return $dependencyResolver->makeLocal($name);
-            }
-        } while ($dependencyResolver = $dependencyResolver->getParent());
-
-        throw new ItemNotFoundException($name);
-    }
-
-    /**
-     * Check if the item is located in the dependency resolver chain or at the
-     * available read only container.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    public function hasFromAll(string $name): bool
-    {
-        return $this->has($name)
-            || null !== $this->readOnlyContainer
-            && $this->readOnlyContainer->has($name);
-    }
-
-    /**
-     * Get an item from the dependency resolver chain or from the available read
-     * only container.
-     *
-     * @param string $name
-     *
-     * @return mixed
-     *
-     * @throws ItemNotFoundException
-     * @throws CircularDependencyException
-     * @throws InvalidObjectConfigurationException
-     * @throws NotFoundExceptionInterface
-     * @throws ContainerExceptionInterface
-     */
-    public function getFromAll(string $name)
-    {
-        if ($this->has($name) || null === $this->readOnlyContainer) {
-            return $this->get($name);
+        if (!isset(self::$callables[$fQCN])) {
+            return;
         }
 
-        return $this->readOnlyContainer->get($name);
+        try {
+            foreach (self::$callables[$fQCN] as $callable) {
+                if ($callable->isTaggedBy($tags)) {
+                    call_user_func($callable, $class, ...$callable->getArguments());
+                }
+            }
+        } catch (Exception $e) {
+            throw new ExecuteCallableException($e->getMessage(), $e->getCode(), $e);
+        }
     }
+
+    public static function getIterableForRegisteredCallables(string $fQCN=null, array $tags=[]): iterable
+    {
+        $callables = null !== $fQCN ? [self::$callables[$fQCN]] : self::$callables;
+
+        foreach ($callables as $classCallables) {
+            foreach ($classCallables as $callable) {
+                if ($callable->isTaggedBy($tags)) {
+                        yield $callable;
+                }
+            }
+        }
+    }
+
+    public static function clearRegisteredCallables(string $fQCN=null, array $tags=[]): void
+    {
+        if (empty($tags)) {
+            if (null !== $fQCN) {
+                unset(self::$callables[$fQCN]);
+
+                return;
+            }
+
+            self::$callables = [];
+
+            return;
+        }
+
+        $callables = null !== $fQCN ? [self::$callables[$fQCN]] : self::$callables;
+
+        foreach ($callables as $fQCN => $classCallables) {
+            $stillValidCallables = [];
+            foreach ($classCallables as $callable) {
+                if (!$callable->isTaggedBy($tags)) {
+                    $stillValidCallables[] = $callable;
+                }
+            }
+            self::$callables[$fQCN] = $stillValidCallables;
+        }
+    }
+
 }

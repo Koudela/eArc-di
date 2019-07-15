@@ -12,8 +12,8 @@
 namespace eArc\DI\Exceptions;
 
 /**
- * The given configuration information is insufficient or not usable.
+ * No class can be identified by the supplied fully qualified class name.
  */
-class InvalidObjectConfigurationException extends DependencyContainerException
+class ClassNotFoundException extends Exception
 {
 }

@@ -11,9 +11,12 @@
 
 namespace eArc\DI\Exceptions;
 
+use Psr\Container\ContainerExceptionInterface;
+use Exception as BaseException;
+
 /**
- * Factory information supplied is insufficient or not usable.
+ * Generic dependency injection exception
  */
-class InvalidFactoryException extends DependencyContainerException
+class Exception extends BaseException implements ContainerExceptionInterface
 {
 }
