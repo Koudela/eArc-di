@@ -11,7 +11,7 @@
 
 namespace eArc\DI\Interfaces;
 
-use eArc\DI\Exceptions\ClassNotFoundException;
+use eArc\DI\Exceptions\NotFoundException;
 use eArc\DI\Exceptions\ExecuteCallableException;
 use eArc\DI\Exceptions\MakeClassException;
 
@@ -33,7 +33,7 @@ interface ResolverInterface
      *
      * @return object An instance.
      *
-     * @throws ClassNotFoundException   No class was found for **this** identifier.
+     * @throws NotFoundException   No class was found for **this** identifier.
      * @throws MakeClassException       Error while instantiating the class.
      * @throws ExecuteCallableException Error while executing the callables.
      */
@@ -53,7 +53,7 @@ interface ResolverInterface
      *
      * @return object The new instance.
      *
-     * @throws ClassNotFoundException   No class was found for **this** identifier.
+     * @throws NotFoundException   No class was found for **this** identifier.
      * @throws MakeClassException       Error while instantiating the class.
      * @throws ExecuteCallableException Error while executing the callables.
      */
@@ -71,7 +71,7 @@ interface ResolverInterface
      *
      * @return bool
      */
-    public static function has(string $fQCN);
+    public static function has(string $fQCN): bool;
 
 
     /**
@@ -95,7 +95,7 @@ interface ResolverInterface
      * @param string $fQCN
      * @param string $fQCNReplacement
      *
-     * @throws ClassNotFoundException The arguments can not be resolved.
+     * @throws NotFoundException The arguments can not be resolved.
      */
     public static function decorate(string $fQCN, string $fQCNReplacement): void;
 
@@ -107,7 +107,7 @@ interface ResolverInterface
      *
      * @return bool
      *
-     * @throws ClassNotFoundException The argument can not be resolved.
+     * @throws NotFoundException The argument can not be resolved.
      */
     public static function isDecorated(string $fQCN): bool;
 
@@ -119,7 +119,7 @@ interface ResolverInterface
      * .
      * @return string The Decorator.
      *
-     * @throws ClassNotFoundException The argument can not be resolved or no decoration
+     * @throws NotFoundException The argument can not be resolved or no decoration
      * is applied on **this** identifier.
      */
     public static function getDecorator(string $fQCN): string;
@@ -133,9 +133,9 @@ interface ResolverInterface
      * Hint: Use this method to register some class X to a class $fQCN if the class
      * X can not or must not be registered by design.
      *
-     * @param ResolverCallableInterface $callable
+     * @param DICallableInterface $callable
      */
-    public static function registerCallable(ResolverCallableInterface $callable): void;
+    public static function registerCallable(DICallableInterface $callable): void;
 
     /**
      * Checks whether at least one callable is registered to a class identified by
@@ -190,4 +190,20 @@ interface ResolverInterface
      * @param array $tags Filter by a group of tags.
      */
     public static function clearRegisteredCallables(string $fQCN=null, array $tags=[]): void;
+
+    /**
+     * Mocks a class. `get($fQCN)` and `make($fQCN)` always return the object passed
+     * as mock.
+     *
+     * @param string $fQCN The identifier of the class to mock.
+     * @param object $mock The Mock.
+     */
+    public static function mock(string $fQCN, object $mock): void;
+
+    /**
+     * Unset a mock. `get($fQCN)` and `make($fQCN)` behave again normally.
+     *
+     * @param string $fQCN The identifier of the mocked class.
+     */
+    public static function clearMock(string $fQCN): void;
 }

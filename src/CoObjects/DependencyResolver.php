@@ -9,12 +9,12 @@
  * @license http://opensource.org/licenses/MIT MIT License
  */
 
-namespace eArc\DI;
+namespace eArc\DI\CoObjects;
 
-use eArc\DI\Exceptions\ClassNotFoundException;
+use eArc\DI\Exceptions\NotFoundException;
 use eArc\DI\Exceptions\ExecuteCallableException;
 use eArc\DI\Exceptions\MakeClassException;
-use eArc\DI\Interfaces\ResolverCallableInterface;
+use eArc\DI\Interfaces\DICallableInterface;
 use eArc\DI\Interfaces\ResolverInterface;
 use Exception;
 
@@ -23,11 +23,16 @@ abstract class DependencyResolver implements ResolverInterface
     protected static $instance = [];
     protected static $decorator = [];
     protected static $callables = [];
+    protected static $mock = [];
 
     public static function get(string $fQCN): object
     {
         if (isset(self::$decorator[$fQCN])) {
             return self::get(self::$decorator[$fQCN]);
+        }
+
+        if (isset(self::$mock[$fQCN])) {
+            return self::$mock[$fQCN];
         }
 
         if (!isset(self::$instance[$fQCN])) {
@@ -44,7 +49,11 @@ abstract class DependencyResolver implements ResolverInterface
         }
 
         if (!self::has($fQCN)) {
-            throw new ClassNotFoundException(sprintf('%s is no fully qualified class name.', $fQCN));
+            throw new NotFoundException(sprintf('%s is no fully qualified class name.', $fQCN));
+        }
+
+        if (isset(self::$mock[$fQCN])) {
+            return self::$mock[$fQCN];
         }
 
         try {
@@ -56,7 +65,6 @@ abstract class DependencyResolver implements ResolverInterface
 
             return $class;
     }
-
 
     public static function has(string $fQCN): bool
     {
@@ -75,11 +83,11 @@ abstract class DependencyResolver implements ResolverInterface
     public static function decorate(string $fQCN, string $fQCNReplacement): void
     {
         if (!self::has($fQCN)) {
-            throw new ClassNotFoundException(sprintf('%s is no fully qualified class name.', $fQCN));
+            throw new NotFoundException(sprintf('%s is no fully qualified class name.', $fQCN));
         }
 
         if (!self::has($fQCNReplacement)) {
-            throw new ClassNotFoundException(sprintf('%s is no fully qualified class name.', $fQCNReplacement));
+            throw new NotFoundException(sprintf('%s is no fully qualified class name.', $fQCNReplacement));
         }
 
         self::$decorator[$fQCN] = $fQCNReplacement;
@@ -89,7 +97,7 @@ abstract class DependencyResolver implements ResolverInterface
     public static function isDecorated(string $fQCN): bool
     {
         if (!self::has($fQCN)) {
-            throw new ClassNotFoundException(sprintf('%s is no fully qualified class name.', $fQCN));
+            throw new NotFoundException(sprintf('%s is no fully qualified class name.', $fQCN));
         }
 
         return isset(self::$decorator[$fQCN]);
@@ -98,13 +106,13 @@ abstract class DependencyResolver implements ResolverInterface
     public static function getDecorator(string $fQCN): string
     {
         if (!self::isDecorated($fQCN)) {
-            throw new ClassNotFoundException(sprintf('%s is not a decorated class.', $fQCN));
+            throw new NotFoundException(sprintf('%s is not a decorated class.', $fQCN));
         }
 
         return self::$decorator[$fQCN];
     }
 
-    public static function registerCallable(ResolverCallableInterface $callable): void
+    public static function registerCallable(DICallableInterface $callable): void
     {
         self::$callables[$callable->getClassName()][] = $callable;
     }
@@ -185,4 +193,13 @@ abstract class DependencyResolver implements ResolverInterface
         }
     }
 
+    public static function mock(string $fQCN, object $mock): void
+    {
+        self::$mock[$fQCN] = $mock;
+    }
+
+    public static function clearMock(string $fQCN): void
+    {
+        unset(self::$mock[$fQCN]);
+    }
 }

@@ -2,11 +2,7 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use eArc\DI\DependencyResolver;
-use eArc\DI\Exceptions\ClassNotFoundException;
-use eArc\DI\Exceptions\ExecuteCallableException;
-use eArc\DI\Exceptions\MakeClassException;
-use eArc\DI\ParameterBag;
+use eArc\DI\DI;
 
 class A
 {
@@ -14,7 +10,7 @@ class A
 
     public function __construct()
     {
-        $this->p = ParameterBag::get('p1');
+        $this->p = di_param('p1');
     }
 
     public function sayHello()
@@ -32,17 +28,12 @@ class B extends A
 {
     protected $a;
 
-    /**
-     * @throws ClassNotFoundException
-     * @throws ExecuteCallableException
-     * @throws MakeClassException
-     */
     public function __construct()
     {
         parent::__construct();
 
-        $this->a = DependencyResolver::get(A::class);
-        $this->p = ParameterBag::get('p2');
+        $this->a = di_get(A::class);
+        $this->p = di_param('p2.px');
     }
 
     public function getA()
@@ -61,15 +52,10 @@ class C
     protected $a;
     protected $b;
 
-    /**
-     * @throws ClassNotFoundException
-     * @throws ExecuteCallableException
-     * @throws MakeClassException
-     */
     public function __construct()
     {
-        $this->a = DependencyResolver::get(A::class);
-        $this->b = DependencyResolver::get(B::class);
+        $this->a = di_get(A::class);
+        $this->b = di_get(B::class);
     }
 
     public function getA()
@@ -90,21 +76,22 @@ class D extends A
     }
 }
 
-ParameterBag::import(['p1' => 'Hase', 'p2' => 'Igel']);
+DI::init();
+di_import_param(['p1' => 'Hase', 'p2' => ['px' => 'Igel']]);
 /* @var C $c */
-$c = DependencyResolver::get(C::class);
+$c = di_get(C::class);
 $c->getB()->getA()->sayHello();
 $c->getA()->sayHello();
 $c->getB()->sayHello();
 $c->getA()->myParameter();
-DependencyResolver::decorate(A::class, D::class);
-$c = DependencyResolver::make(C::class);
+di_decorate(A::class, D::class);
+$c = di_make(C::class);
 $c->getB()->getA()->sayHello();
 $c->getA()->sayHello();
 $c->getB()->sayHello();
 $c->getB()->myParameter();
-DependencyResolver::clearCache(B::class);
-$c = DependencyResolver::make(C::class);
+di_clear_cache(B::class);
+$c = di_make(C::class);
 $c->getB()->getA()->sayHello();
 $c->getA()->sayHello();
 $c->getB()->sayHello();

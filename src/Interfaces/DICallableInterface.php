@@ -14,7 +14,7 @@ namespace eArc\DI\Interfaces;
 /**
  * Interface for objects used as callables in the resolver context.
  */
-interface ResolverCallableInterface
+interface DICallableInterface
 {
     /**
      * Returns the fully qualified class name identifier of the class the callable

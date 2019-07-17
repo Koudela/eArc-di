@@ -11,9 +11,9 @@
 
 namespace eArc\DI;
 
-use eArc\DI\Interfaces\ResolverCallableInterface;
+use eArc\DI\Interfaces\DICallableInterface;
 
-class ResolverCallable implements ResolverCallableInterface
+class DICallable implements DICallableInterface
 {
     protected $className;
     protected $callable;
