@@ -89,6 +89,8 @@ interface ResolverInterface
      * that `get($fQCN)` and `make($fQCN)` behave as if `get($fQCNReplacement)` or
      * `make($fQCNReplacement)` has been called. Successive decorations apply.
      *
+     * If `$fQCN` is equal to `fQCNReplacement` the decoration of `$fQCN` is removed.
+     *
      * This method is useful for fixing unchangeable classes or mocking classes in
      * the test environment.
      *

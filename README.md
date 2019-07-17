@@ -39,11 +39,10 @@ which builds on the top of earc/di.
 
 ## installation
 
-You can install the earc dependency injection container without the eArc
-framework via composer.
+Install the earc dependency injection library via composer.
 
 ```
-$ composer install earc/di
+$ composer require earc/di
 ```
 
 You can even use it with [symfony](#integration-with-other-di-systems).

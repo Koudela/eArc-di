@@ -86,6 +86,12 @@ abstract class DependencyResolver implements ResolverInterface
             throw new NotFoundDIException(sprintf('%s is no fully qualified class name.', $fQCN));
         }
 
+        if ($fQCN === $fQCNReplacement) {
+            self::$decorator[$fQCN];
+
+            return;
+        }
+
         if (!static::has($fQCNReplacement)) {
             throw new NotFoundDIException(sprintf('%s is no fully qualified class name.', $fQCNReplacement));
         }
