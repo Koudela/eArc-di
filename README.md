@@ -9,19 +9,12 @@ $ PHP Fatal error:  Uncaught Error: Maximum function nesting level of '256' reac
 ```
 # earc/di
 
-Dependency injection component of the 
-[earc framework](https://github.com/Koudela/eArc-core). earc/di can also be used 
-as standalone or in combination with other frameworks.
+Standalone lightweight dependency injection component of the eArc libraries.
 
-The earc dependency injection container is 
-[psr-11](https://www.php-fig.org/psr/psr-11/) compatible, supports lazy 
-instantiation, tree typed dependencies, container merging, factories and 
-dynamic configuration.
+If you need to decouple your components or want to make your app components explicit 
+use the [earc/component-di](https://github.com/Koudela/eArc-component-di) library
+which builds on the top of earc/di.
 
-If you need to decouple your components or want to make the dependencies of
-your apps components explicit use the 
-[earc/component-di container](https://github.com/Koudela/eArc-component-di).
- 
 ## table of contents
  
  - [installation](#installation)
@@ -53,27 +46,98 @@ framework via composer.
 $ composer install earc/di
 ```
 
+You can even use it with [symfony](#integration-with-other-di-systems).
+
+## pro/cons
+
+### pro
+
+- **no container** - instances are generated on the fly
+- **no configuration overhead** - dependency information is all part of the class and
+ not part of the process until autoloading of the class.
+- **no loading overhead** - dependencies are resolved on instantiation of the class.
+- **no limitations on writing tests** - mocking is not limited to constructor arguments
+- -> you are free to inject your dependencies where they evolve 
+- -> therefore no need to use heavy overhead pre build class [proxies](https://github.com/Ocramius/ProxyManager)
+ like the one used by symfony to achieve lazy loading on usage.
+ - **use of global functions** - once initialized there is no need to inject it 
+  anywhere
+- **use it everywhere** - injection works even with vanilla functions and closures.  
+- **architectural optimized code** - no pre building or pre compiling needed
+- **support for explicit programming/architecture** - a class has hold of all its 
+ implementation details (apart from decoration, mocking and parameters which are by 
+ their very nature foreign context driven)
+ - **extendable** - integrates with [other dependency systems](#integration-with-other-di-systems).
+
+### cons
+
+- **dependency** on a dependency injection library
+- **small overhead** - decoration, mocking and instantiation callables need some programming
+logic
+
 ## basic usage
 
-A new dependency container instance can be constructed with no arguments.
+A new dependency resolver can be initialized with no arguments.
 
 ```php
-use eArc\DI\DependencyContainer;
+use eArc\DI\DI;
 
-$dc = new DependencyContainer();
+DI::init();
 ```
 
-Container items can be classes or parameter. They are accessed via their name.
+After that classes and parameters can be accessed via the resolver.
 
 ```php
-$dc->has($itemName);
+di_get(SomeClass::class);
+
+di_param('some.parameter');
 ```
 
-Checks for existence of a container item.
+Classes must not have constructor parameters.
 
 ```php
-$dc->get($itemName);
+public function construct()
+{
+    $this->dependency1 = di_get(DependencyOne::class);
+    $this->dependency2 = di_get(DependencyTwo::class);
+    $this->parameterAlpha = di_param('alpha');
+    $this->parameterBeta = di_param('beta');
+    $this->parameterGamma = di_param('gamma');
+}
 ```
+
+Method and even function injection is supported.
+
+```php
+class Example
+{
+    public function getResult($param)
+    {
+        $math = di_get(Math::class)
+        return $math->calculate($param, di_param('pi'))
+    }
+}
+
+function depending_on_injection($param)
+{
+        $math = di_get(Math::class)
+        return $math->calculate($param, di_param('pi'))
+}
+
+$result = depending_on_injection(42);
+``` 
+
+## Parameters
+
+--
+...
+--
+
+
+--
+...
+--
+
 
 Retrieves the parameter or the object. If the item is a object `get()` behaves
 like calling a singleton, it always returns the same instance.
@@ -527,6 +591,10 @@ using [earc/components-di](https://github.com/Koudela/eArc-component-di).
 In modern agile teams maybe the biggest advantage is that no programmer can
 introduce a new dependency accidentally. Thus helping to keep the architectural
 design clean.
+
+## integration with other di systems
+There is even a way to combine it with the symfony container if you want to test it
+or migrate your symfony app over a longer time period.
 
 ## releases
 

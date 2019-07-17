@@ -64,16 +64,16 @@ namespace {
          *
          * @throws DIException
          */
-        public static function init(string $resolver=DependencyResolver::class, string $parameterBag=ParameterBag::class)
+        public static function init(string $resolver=DependencyResolver::class, string $parameterBag=ParameterBag::class): void
         {
             if (!is_subclass_of($resolver, ResolverInterface::class)) {
-                throw new DIException(sprintf('Resolver has to implement %s', ResolverInterface::class));
+                throw new DIException(sprintf('Resolver has to implement %s.', ResolverInterface::class));
             }
 
             self::$resolver = $resolver;
 
             if (!is_subclass_of($parameterBag, ParameterBagInterface::class)) {
-                throw new DIException(sprintf('ParameterBag has to implement %s', ParameterBagInterface::class));
+                throw new DIException(sprintf('ParameterBag has to implement %s.', ParameterBagInterface::class));
             }
 
             self::$parameterBag = $parameterBag;
