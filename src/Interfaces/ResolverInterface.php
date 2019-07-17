@@ -11,9 +11,9 @@
 
 namespace eArc\DI\Interfaces;
 
-use eArc\DI\Exceptions\NotFoundException;
-use eArc\DI\Exceptions\ExecuteCallableException;
-use eArc\DI\Exceptions\MakeClassException;
+use eArc\DI\Exceptions\NotFoundDIException;
+use eArc\DI\Exceptions\ExecuteCallableDIException;
+use eArc\DI\Exceptions\MakeClassDIException;
 
 /**
  * Describes the interface of a static dependency resolver.
@@ -33,9 +33,9 @@ interface ResolverInterface
      *
      * @return object An instance.
      *
-     * @throws NotFoundException   No class was found for **this** identifier.
-     * @throws MakeClassException       Error while instantiating the class.
-     * @throws ExecuteCallableException Error while executing the callables.
+     * @throws NotFoundDIException   No class was found for **this** identifier.
+     * @throws MakeClassDIException       Error while instantiating the class.
+     * @throws ExecuteCallableDIException Error while executing the callables.
      */
     public static function get(string $fQCN): object;
 
@@ -53,9 +53,9 @@ interface ResolverInterface
      *
      * @return object The new instance.
      *
-     * @throws NotFoundException   No class was found for **this** identifier.
-     * @throws MakeClassException       Error while instantiating the class.
-     * @throws ExecuteCallableException Error while executing the callables.
+     * @throws NotFoundDIException   No class was found for **this** identifier.
+     * @throws MakeClassDIException       Error while instantiating the class.
+     * @throws ExecuteCallableDIException Error while executing the callables.
      */
     public static function make(string $fQCN): object;
 
@@ -95,7 +95,7 @@ interface ResolverInterface
      * @param string $fQCN
      * @param string $fQCNReplacement
      *
-     * @throws NotFoundException The arguments can not be resolved.
+     * @throws NotFoundDIException The arguments can not be resolved.
      */
     public static function decorate(string $fQCN, string $fQCNReplacement): void;
 
@@ -107,7 +107,7 @@ interface ResolverInterface
      *
      * @return bool
      *
-     * @throws NotFoundException The argument can not be resolved.
+     * @throws NotFoundDIException The argument can not be resolved.
      */
     public static function isDecorated(string $fQCN): bool;
 
@@ -119,7 +119,7 @@ interface ResolverInterface
      * .
      * @return string The Decorator.
      *
-     * @throws NotFoundException The argument can not be resolved or no decoration
+     * @throws NotFoundDIException The argument can not be resolved or no decoration
      * is applied on **this** identifier.
      */
     public static function getDecorator(string $fQCN): string;
@@ -163,7 +163,7 @@ interface ResolverInterface
      * get applied to.
      * @param array  $tags  Filter by a group of tags.
      *
-     * @throws ExecuteCallableException Error while executing the callables.
+     * @throws ExecuteCallableDIException Error while executing the callables.
      */
     public static function executeCallables(object $class, string $fQCN, array $tags=[]): void;
 

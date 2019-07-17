@@ -14,6 +14,6 @@ namespace eArc\DI\Exceptions;
 /**
  * No class can be identified by the supplied fully qualified class name.
  */
-class NotFoundException extends Exception
+class NotFoundDIException extends DIException
 {
 }

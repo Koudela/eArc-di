@@ -11,9 +11,9 @@
 
 namespace eArc\DI\CoObjects;
 
-use eArc\DI\Exceptions\NotFoundException;
-use eArc\DI\Exceptions\ExecuteCallableException;
-use eArc\DI\Exceptions\MakeClassException;
+use eArc\DI\Exceptions\NotFoundDIException;
+use eArc\DI\Exceptions\ExecuteCallableDIException;
+use eArc\DI\Exceptions\MakeClassDIException;
 use eArc\DI\Interfaces\DICallableInterface;
 use eArc\DI\Interfaces\ResolverInterface;
 use Exception;
@@ -49,7 +49,7 @@ abstract class DependencyResolver implements ResolverInterface
         }
 
         if (!self::has($fQCN)) {
-            throw new NotFoundException(sprintf('%s is no fully qualified class name.', $fQCN));
+            throw new NotFoundDIException(sprintf('%s is no fully qualified class name.', $fQCN));
         }
 
         if (isset(self::$mock[$fQCN])) {
@@ -59,7 +59,7 @@ abstract class DependencyResolver implements ResolverInterface
         try {
             $class = new $fQCN();
         } catch (Exception $e) {
-            throw new MakeClassException($e->getMessage(), $e->getCode(), $e);
+            throw new MakeClassDIException($e->getMessage(), $e->getCode(), $e);
         }
             self::executeCallables($class, $fQCN);
 
@@ -83,11 +83,11 @@ abstract class DependencyResolver implements ResolverInterface
     public static function decorate(string $fQCN, string $fQCNReplacement): void
     {
         if (!self::has($fQCN)) {
-            throw new NotFoundException(sprintf('%s is no fully qualified class name.', $fQCN));
+            throw new NotFoundDIException(sprintf('%s is no fully qualified class name.', $fQCN));
         }
 
         if (!self::has($fQCNReplacement)) {
-            throw new NotFoundException(sprintf('%s is no fully qualified class name.', $fQCNReplacement));
+            throw new NotFoundDIException(sprintf('%s is no fully qualified class name.', $fQCNReplacement));
         }
 
         self::$decorator[$fQCN] = $fQCNReplacement;
@@ -97,7 +97,7 @@ abstract class DependencyResolver implements ResolverInterface
     public static function isDecorated(string $fQCN): bool
     {
         if (!self::has($fQCN)) {
-            throw new NotFoundException(sprintf('%s is no fully qualified class name.', $fQCN));
+            throw new NotFoundDIException(sprintf('%s is no fully qualified class name.', $fQCN));
         }
 
         return isset(self::$decorator[$fQCN]);
@@ -106,7 +106,7 @@ abstract class DependencyResolver implements ResolverInterface
     public static function getDecorator(string $fQCN): string
     {
         if (!self::isDecorated($fQCN)) {
-            throw new NotFoundException(sprintf('%s is not a decorated class.', $fQCN));
+            throw new NotFoundDIException(sprintf('%s is not a decorated class.', $fQCN));
         }
 
         return self::$decorator[$fQCN];
@@ -149,7 +149,7 @@ abstract class DependencyResolver implements ResolverInterface
                 }
             }
         } catch (Exception $e) {
-            throw new ExecuteCallableException($e->getMessage(), $e->getCode(), $e);
+            throw new ExecuteCallableDIException($e->getMessage(), $e->getCode(), $e);
         }
     }
 

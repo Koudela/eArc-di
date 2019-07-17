@@ -17,6 +17,6 @@ use Exception as BaseException;
 /**
  * Generic dependency injection exception
  */
-class Exception extends BaseException implements ContainerExceptionInterface
+class DIException extends BaseException implements ContainerExceptionInterface
 {
 }

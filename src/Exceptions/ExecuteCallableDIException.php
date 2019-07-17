@@ -12,8 +12,9 @@
 namespace eArc\DI\Exceptions;
 
 /**
- * This exception is thrown if it is not possible to instantiate the class.
+ * This exception is thrown if it is not possible to execute the callables attached
+ * to a class.
  */
-class MakeClassException extends Exception
+class ExecuteCallableDIException extends DIException
 {
 }

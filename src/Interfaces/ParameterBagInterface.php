@@ -11,7 +11,7 @@
 
 namespace eArc\DI\Interfaces;
 
-use eArc\DI\Exceptions\NotFoundException;
+use eArc\DI\Exceptions\NotFoundDIException;
 
 /**
  * Describes the interface of a static parameter bag. Methods supporting the dot
@@ -25,9 +25,9 @@ interface ParameterBagInterface
      *
      * @param string $key
      *
-     * @throws NotFoundException The parameter does not exist.
-     *
      * @return mixed
+     * @throws NotFoundDIException The parameter does not exist.
+     *
      */
     public static function get(string $key);
 
