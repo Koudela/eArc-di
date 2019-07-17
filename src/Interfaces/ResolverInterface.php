@@ -91,8 +91,9 @@ interface ResolverInterface
      *
      * If `$fQCN` is equal to `fQCNReplacement` the decoration of `$fQCN` is removed.
      *
-     * This method is useful for fixing unchangeable classes or mocking classes in
-     * the test environment.
+     * This method is useful for fixing unchangeable classes, replacing classes
+     * to change behavior in different environments or mocking by explicit class
+     * mocks.
      *
      * @param string $fQCN
      * @param string $fQCNReplacement

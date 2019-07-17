@@ -87,7 +87,7 @@ abstract class DependencyResolver implements ResolverInterface
         }
 
         if ($fQCN === $fQCNReplacement) {
-            self::$decorator[$fQCN];
+            unset(self::$decorator[$fQCN]);
 
             return;
         }
