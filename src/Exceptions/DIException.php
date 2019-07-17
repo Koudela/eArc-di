@@ -12,11 +12,11 @@
 namespace eArc\DI\Exceptions;
 
 use Psr\Container\ContainerExceptionInterface;
-use Exception as BaseException;
+use Exception;
 
 /**
  * Generic dependency injection exception
  */
-class DIException extends BaseException implements ContainerExceptionInterface
+class DIException extends Exception implements ContainerExceptionInterface
 {
 }

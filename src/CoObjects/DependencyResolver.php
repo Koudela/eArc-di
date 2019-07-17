@@ -28,7 +28,7 @@ abstract class DependencyResolver implements ResolverInterface
     public static function get(string $fQCN): object
     {
         if (isset(self::$decorator[$fQCN])) {
-            return self::get(self::$decorator[$fQCN]);
+            return static::get(self::$decorator[$fQCN]);
         }
 
         if (isset(self::$mock[$fQCN])) {
@@ -36,7 +36,7 @@ abstract class DependencyResolver implements ResolverInterface
         }
 
         if (!isset(self::$instance[$fQCN])) {
-            self::$instance[$fQCN] = self::make($fQCN);
+            self::$instance[$fQCN] = static::make($fQCN);
         }
 
         return self::$instance[$fQCN];
@@ -45,10 +45,10 @@ abstract class DependencyResolver implements ResolverInterface
     public static function make(string $fQCN): object
     {
         if (isset(self::$decorator[$fQCN])) {
-            return self::make(self::$decorator[$fQCN]);
+            return static::make(self::$decorator[$fQCN]);
         }
 
-        if (!self::has($fQCN)) {
+        if (!static::has($fQCN)) {
             throw new NotFoundDIException(sprintf('%s is no fully qualified class name.', $fQCN));
         }
 
@@ -82,11 +82,11 @@ abstract class DependencyResolver implements ResolverInterface
 
     public static function decorate(string $fQCN, string $fQCNReplacement): void
     {
-        if (!self::has($fQCN)) {
+        if (!static::has($fQCN)) {
             throw new NotFoundDIException(sprintf('%s is no fully qualified class name.', $fQCN));
         }
 
-        if (!self::has($fQCNReplacement)) {
+        if (!static::has($fQCNReplacement)) {
             throw new NotFoundDIException(sprintf('%s is no fully qualified class name.', $fQCNReplacement));
         }
 
@@ -96,7 +96,7 @@ abstract class DependencyResolver implements ResolverInterface
 
     public static function isDecorated(string $fQCN): bool
     {
-        if (!self::has($fQCN)) {
+        if (!static::has($fQCN)) {
             throw new NotFoundDIException(sprintf('%s is no fully qualified class name.', $fQCN));
         }
 
@@ -105,7 +105,7 @@ abstract class DependencyResolver implements ResolverInterface
 
     public static function getDecorator(string $fQCN): string
     {
-        if (!self::isDecorated($fQCN)) {
+        if (!static::isDecorated($fQCN)) {
             throw new NotFoundDIException(sprintf('%s is not a decorated class.', $fQCN));
         }
 

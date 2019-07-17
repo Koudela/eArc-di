@@ -20,7 +20,7 @@ abstract class ParameterBag implements ParameterBagInterface
 
     public static function get(string $key)
     {
-        if (!self::has($key)) {
+        if (!static::has($key)) {
             throw new NotFoundDIException(sprintf('Parameter %s was never added to the parameter bag.', $key));
         }
 
