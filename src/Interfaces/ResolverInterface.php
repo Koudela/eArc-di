@@ -33,7 +33,7 @@ interface ResolverInterface
      *
      * @return object An instance.
      *
-     * @throws NotFoundDIException   No class was found for **this** identifier.
+     * @throws NotFoundDIException        No class was found for **this** identifier.
      * @throws MakeClassDIException       Error while instantiating the class.
      * @throws ExecuteCallableDIException Error while executing the callables.
      */
@@ -53,7 +53,7 @@ interface ResolverInterface
      *
      * @return object The new instance.
      *
-     * @throws NotFoundDIException   No class was found for **this** identifier.
+     * @throws NotFoundDIException        No class was found for **this** identifier.
      * @throws MakeClassDIException       Error while instantiating the class.
      * @throws ExecuteCallableDIException Error while executing the callables.
      */
