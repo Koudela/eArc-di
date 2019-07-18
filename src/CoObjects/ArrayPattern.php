@@ -11,7 +11,7 @@
 
 namespace eArc\DI\CoObjects;
 
-class ArrayPattern
+abstract class ArrayPattern
 {
     public static function has(array $keys, array $array): bool
     {

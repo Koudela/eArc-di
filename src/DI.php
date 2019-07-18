@@ -13,7 +13,7 @@ namespace eArc\DI {
 
     use eArc\DI\CoObjects\DependencyResolver;
     use eArc\DI\CoObjects\ParameterBag;
-    use eArc\DI\Exceptions\DIException;
+    use eArc\DI\Exceptions\InvalidArgumentException;
     use BootstrapEArcDI;
 
     abstract class DI
@@ -22,7 +22,7 @@ namespace eArc\DI {
          * @param string $resolver
          * @param string $parameterBag
          *
-         * @throws DIException
+         * @throws InvalidArgumentException
          */
         public static function init(string $resolver=DependencyResolver::class, string $parameterBag=ParameterBag::class): void
         {
@@ -34,7 +34,7 @@ namespace eArc\DI {
 namespace {
 
     use eArc\DI\CoObjects\DependencyResolver;
-    use eArc\DI\Exceptions\DIException;
+    use eArc\DI\Exceptions\InvalidArgumentException;
     use eArc\DI\CoObjects\ParameterBag;
     use eArc\DI\Interfaces\ParameterBagInterface;
     use eArc\DI\Interfaces\ResolverInterface;
@@ -61,18 +61,18 @@ namespace {
          * @param string $resolver
          * @param string $parameterBag
          *
-         * @throws DIException
+         * @throws InvalidArgumentException
          */
         public static function init(string $resolver=DependencyResolver::class, string $parameterBag=ParameterBag::class): void
         {
             if (!is_subclass_of($resolver, ResolverInterface::class)) {
-                throw new DIException(sprintf('Resolver has to implement %s.', ResolverInterface::class));
+                throw new InvalidArgumentException(sprintf('Resolver has to implement %s.', ResolverInterface::class));
             }
 
             self::$resolver = $resolver;
 
             if (!is_subclass_of($parameterBag, ParameterBagInterface::class)) {
-                throw new DIException(sprintf('ParameterBag has to implement %s.', ParameterBagInterface::class));
+                throw new InvalidArgumentException(sprintf('ParameterBag has to implement %s.', ParameterBagInterface::class));
             }
 
             self::$parameterBag = $parameterBag;

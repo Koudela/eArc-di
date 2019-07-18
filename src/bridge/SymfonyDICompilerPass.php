@@ -13,7 +13,7 @@ namespace eArc\DI\bridge;
 
 use eArc\DI\CoObjects\SymfonyResolver;
 use eArc\DI\DI;
-use eArc\DI\Exceptions\DIException;
+use eArc\DI\Exceptions\InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
@@ -25,7 +25,7 @@ class SymfonyDICompilerPass implements CompilerPassInterface
     /**
      * {@inheritdoc}
      *
-     * @throws DIException
+     * @throws InvalidArgumentException
      */
     public function process(ContainerBuilder $container)
     {

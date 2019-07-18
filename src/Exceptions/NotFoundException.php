@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * e-Arc Framework - the explicit Architecture Framework
  * dependency injection component
@@ -14,6 +14,6 @@ namespace eArc\DI\Exceptions;
 /**
  * No class can be identified by the supplied fully qualified class name.
  */
-class NotFoundDIException extends DIException
+class NotFoundException extends BaseException
 {
 }

@@ -292,29 +292,24 @@ Assert::assertSame(2, di_get(ServiceDecorator::class)->iAmMock) // passes
 
 earc/di has dropped circular dependency detection in favour of performance. If you
 experience an error like the following in the earc/di code its cause is most likely
-a circular dependency of the classes. 
+a circular dependency of your classes. 
 
 ```
 $ PHP Fatal error:  Uncaught Error: Maximum function nesting level of '256' reached, aborting! 
 ```
 ## exceptions
 
- * An `ItemNotFoundException` is thrown if the item does not exists or `make()` 
- is called but there is no configuration for the class.
- 
- * An `InvalidFactoryException` if you call `make()` but the items name is not
- a fully qualified class name.
+ * All exceptions thrown inherit from `BaseException`.
 
- * An `InvalidObjectConfigurationException` is thrown if the class is not 
- configured properly.
+ * A plain `InvalidArgumentException` is thrown if `init()` is called and the classes 
+ identified by the parameter does not implement the `ResolverInterface` or the `ParameterBagInterface`.
  
- * An `CircularDependencyException` is thrown if the classes configuration 
- depends in some way on the class itself. If this exception is thrown in your 
- app something is wrong with your dependency container configuration.
+ * An `MakeClassException` it thrown if some Exception is thrown while calling the 
+ class constructor.
 
- * An `ItemOverwriteException` is thrown if the item name is already set. If 
- it is by purpose you can catch the exception. The item is set before the
- exception gets thrown.
+ * An `NotFoundDIException` is thrown if a parameter should be retrieved that never 
+ was set/imported.
+ 
 
 
 
@@ -428,7 +423,7 @@ or migrate your symfony app over a longer time period.
 
 * all types of dependency configuration are dropped - in favour of pure injection
  (Yes, its true! There is no dependency configuration anymore just parameter import,
- decoration and mocking.)
+ decoration, tagging and mocking.)
 
 * dependency on other libraries dropped - in favour of a lightweight architecture
 

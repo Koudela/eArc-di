@@ -11,8 +11,7 @@
 
 namespace eArc\DI\CoObjects;
 
-use eArc\DI\Exceptions\NotFoundDIException;
-use eArc\DI\Exceptions\MakeClassDIException;
+use eArc\DI\Exceptions\MakeClassException;
 use eArc\DI\Interfaces\ResolverInterface;
 use Exception;
 
@@ -46,10 +45,6 @@ abstract class DependencyResolver implements ResolverInterface
             return static::make(self::$decorator[$fQCN]);
         }
 
-        if (!static::has($fQCN)) {
-            throw new NotFoundDIException(sprintf('%s is no fully qualified class name.', $fQCN));
-        }
-
         if (isset(self::$mock[$fQCN])) {
             return self::$mock[$fQCN];
         }
@@ -57,7 +52,7 @@ abstract class DependencyResolver implements ResolverInterface
         try {
             return new $fQCN();
         } catch (Exception $e) {
-            throw new MakeClassDIException($e->getMessage(), $e->getCode(), $e);
+            throw new MakeClassException($e->getMessage(), $e->getCode(), $e);
         }
     }
 
@@ -77,18 +72,10 @@ abstract class DependencyResolver implements ResolverInterface
 
     public static function decorate(string $fQCN, string $fQCNReplacement): void
     {
-        if (!static::has($fQCN)) {
-            throw new NotFoundDIException(sprintf('%s is no fully qualified class name.', $fQCN));
-        }
-
         if ($fQCN === $fQCNReplacement) {
             unset(self::$decorator[$fQCN]);
 
             return;
-        }
-
-        if (!static::has($fQCNReplacement)) {
-            throw new NotFoundDIException(sprintf('%s is no fully qualified class name.', $fQCNReplacement));
         }
 
         self::$decorator[$fQCN] = $fQCNReplacement;
@@ -96,28 +83,16 @@ abstract class DependencyResolver implements ResolverInterface
 
     public static function isDecorated(string $fQCN): bool
     {
-        if (!static::has($fQCN)) {
-            throw new NotFoundDIException(sprintf('%s is no fully qualified class name.', $fQCN));
-        }
-
         return isset(self::$decorator[$fQCN]);
     }
 
-    public static function getDecorator(string $fQCN): string
+    public static function getDecorator(string $fQCN): ?string
     {
-        if (!static::isDecorated($fQCN)) {
-            throw new NotFoundDIException(sprintf('%s is not a decorated class.', $fQCN));
-        }
-
-        return self::$decorator[$fQCN];
+        return @self::$decorator[$fQCN];
     }
 
     public static function tag(string $fQCN, string $name): void
     {
-        if (!static::has($fQCN)) {
-            throw new NotFoundDIException(sprintf('%s is no fully qualified class name.', $fQCN));
-        }
-
         self::$tags[$name][$fQCN] = true;
     }
 

@@ -11,7 +11,7 @@
 
 namespace eArc\DI\CoObjects;
 
-use eArc\DI\Exceptions\NotFoundDIException;
+use eArc\DI\Exceptions\NotFoundException;
 use eArc\DI\Interfaces\ParameterBagInterface;
 
 abstract class ParameterBag implements ParameterBagInterface
@@ -30,7 +30,7 @@ abstract class ParameterBag implements ParameterBagInterface
     public static function get(string $key)
     {
         if (!static::has($key)) {
-            throw new NotFoundDIException(sprintf('Parameter %s was never added to the parameter bag.', $key));
+            throw new NotFoundException(sprintf('Parameter %s was never added to the parameter bag.', $key));
         }
 
         if (strpos($key, '.')) {

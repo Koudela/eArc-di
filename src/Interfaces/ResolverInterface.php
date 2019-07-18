@@ -11,8 +11,7 @@
 
 namespace eArc\DI\Interfaces;
 
-use eArc\DI\Exceptions\NotFoundDIException;
-use eArc\DI\Exceptions\MakeClassDIException;
+use eArc\DI\Exceptions\MakeClassException;
 
 /**
  * Describes the interface of a static dependency resolver.
@@ -33,8 +32,7 @@ interface ResolverInterface
      *
      * @return object An instance.
      *
-     * @throws NotFoundDIException  No class was found for **this** identifier.
-     * @throws MakeClassDIException Error while instantiating the class.
+     * @throws MakeClassException Error while instantiating the class.
      */
     public static function get(string $fQCN): object;
 
@@ -52,8 +50,7 @@ interface ResolverInterface
      *
      * @return object The new instance.
      *
-     * @throws NotFoundDIException  No class was found for **this** identifier.
-     * @throws MakeClassDIException Error while instantiating the class.
+     * @throws MakeClassException Error while instantiating the class.
      */
     public static function make(string $fQCN): object;
 
@@ -70,7 +67,6 @@ interface ResolverInterface
      * @return bool
      */
     public static function has(string $fQCN): bool;
-
 
     /**
      * Forces the resolver to clear his cache for the specified instance. Thus `get($fQCN)`
@@ -95,8 +91,6 @@ interface ResolverInterface
      *
      * @param string $fQCN
      * @param string $fQCNReplacement
-     *
-     * @throws NotFoundDIException The arguments can not be resolved.
      */
     public static function decorate(string $fQCN, string $fQCNReplacement): void;
 
@@ -107,8 +101,6 @@ interface ResolverInterface
      * @param string $fQCN
      *
      * @return bool
-     *
-     * @throws NotFoundDIException The argument can not be resolved.
      */
     public static function isDecorated(string $fQCN): bool;
 
@@ -118,20 +110,15 @@ interface ResolverInterface
      *
      * @param string $fQCN The identifier of the decorated class.
      * .
-     * @return string The Decorator.
-     *
-     * @throws NotFoundDIException The argument can not be resolved or no decoration
-     * is applied on **this** identifier.
+     * @return string|null The Decorator or null if the class is not decorated.
      */
-    public static function getDecorator(string $fQCN): string;
+    public static function getDecorator(string $fQCN): ?string;
 
     /**
      * Adds a tag to a class.
      *
      * @param string $fQCN The fully qualified class name of the class to tag.
      * @param string $name The tag name.
-     *
-     * @throws NotFoundDIException The fully qualified class name can not be resolved.
      */
     public static function tag(string $fQCN, string $name): void;
 

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * e-Arc Framework - the explicit Architecture Framework
  * dependency injection component
@@ -11,12 +11,9 @@
 
 namespace eArc\DI\Exceptions;
 
-use Psr\Container\ContainerExceptionInterface;
-use Exception;
-
 /**
- * Generic dependency injection exception
+ * This exception is thrown if it is not possible to instantiate the class.
  */
-class DIException extends Exception implements ContainerExceptionInterface
+class MakeClassException extends BaseException
 {
 }

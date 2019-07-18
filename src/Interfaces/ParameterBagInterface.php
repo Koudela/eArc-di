@@ -11,7 +11,7 @@
 
 namespace eArc\DI\Interfaces;
 
-use eArc\DI\Exceptions\NotFoundDIException;
+use eArc\DI\Exceptions\NotFoundException;
 
 /**
  * Describes the interface of a static parameter bag. Methods supporting the dot
@@ -23,18 +23,18 @@ interface ParameterBagInterface
     /**
      * Retrieves a parameter from the bag. `get` supports the dot syntax.
      *
-     * @param string $key
+     * @param string $key The parameter key.
      *
      * @return mixed
-     * @throws NotFoundDIException The parameter does not exist.
      *
+     * @throws NotFoundException The Parameter is not set.
      */
     public static function get(string $key);
 
     /**
      * Checks whether a parameter exists. `has` supports the dot syntax.
      *
-     * @param string $key
+     * @param string $key The parameter key.
      *
      * @return bool
      */
@@ -43,17 +43,17 @@ interface ParameterBagInterface
     /**
      * Sets a parameter of the parameter bag. `set` supports the dot syntax.
      *
-     * @param string $key
+     * @param string $key   The parameter key.
      *
-     * @param $value
+     * @param mixed  $value The parameter value.
      */
     public static function set(string $key, $value): void;
 
     /**
      * Imports a multidimensional array with parameters. Already existing parameters
-     * are overwritten if they have the same $key.
+     * are overwritten if they have the same key.
      *
-     * @param array $additionalParameter
+     * @param array $additionalParameter The parameter to import.
      */
     public static function import(array $additionalParameter): void;
 }
