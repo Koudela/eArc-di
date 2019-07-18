@@ -3,38 +3,35 @@
 - REWRITE DOCUMENTATION!
 - REWRITE TESTS
 
-Circular dependency Exception:
-```
-$ PHP Fatal error:  Uncaught Error: Maximum function nesting level of '256' reached, aborting! 
-```
 # earc/di
 
 Standalone lightweight dependency injection component of the eArc libraries.
 
-If you need to decouple your components or want to make your app components explicit 
-use the [earc/component-di](https://github.com/Koudela/eArc-component-di) library
+If you need to decouple your components, restrict injection access or want to make 
+your app components explicit use the [earc/component-di](https://github.com/Koudela/eArc-component-di) library
 which builds on the top of earc/di.
 
 ## table of contents
  
  - [installation](#installation)
+ - [pro/cons](#procons)
  - [basic usage](#basic-usage)
+ - [parameters](#parameters)
+ - [decoration](#decoration)
+ - [factories](#factories)
+ - [tagging](#tagging)
+ - [mocking](#mocking)
  - [dependency configuration](#dependency-configuration)
    - [configuration via constructor arguments](#configuration-via-constructor-arguments)
-   - [configuration using an factory](#configuration-using-an-factory)
-   - [configuration by direct instantiation](#configuration-by-direct-instantiation)
-   - [decoration of a class](#decoration-of-a-class)
-   - [using load](#using-load)
  - [exceptions](#exceptions)
  - [advanced usage](#advanced-usage)
-   - [flags](#flags)
    - [tree typed dependencies](#tree-typed-dependencies)
    - [container merging](#container-merging)
    - [container merging at construction time](#container-merging-at-construction-time) 
    - [performance considerations](#performance-considerations)
-   - [subset generation/decoupling dependencies](#subset-generationdecoupling-dependencies)
  - [releases](#releases)
-   - [release v1.0](#release-v10-beta---develop-branch)
+   - [release v2.0](#release-v20)
+   - [release v1.0](#release-v10)
    - [release v0.1](#release-v01)
 
 ## installation
@@ -53,16 +50,19 @@ You can even use it with [symfony](#integration-with-other-di-systems).
 
 - **no container** - instances are generated on the fly
 - **no configuration overhead** - dependency information is all part of the class and
- not part of the process until autoloading of the class.
-- **no loading overhead** - dependencies are resolved on instantiation of the class.
+ not part of the dependency resolving process. It does not matter until autoloading
+ of the class.
+- **no loading overhead** - dependencies are resolved on usage.
 - **no limitations on writing tests** - mocking is not limited to constructor arguments
 - -> you are free to inject your dependencies where they evolve 
-- -> therefore no need to use heavy overhead pre build class [proxies](https://github.com/Ocramius/ProxyManager)
+- -> therefore no need to use heavy overhead pre build class extending [proxies](https://github.com/Ocramius/ProxyManager)
  like the one used by symfony to achieve lazy loading on usage.
- - **use of global functions** - once initialized there is no need to inject it 
-  anywhere
-- **use it everywhere** - injection works even with vanilla functions and closures.  
+ - **use of global functions** - once initialized there is no need to inject the
+  injector anywhere
+- **use it everywhere** - injection works even in vanilla functions and closures.  
 - **architectural optimized code** - no pre building or pre compiling needed
+- **support for all standard dependency enrichment techniques** - decoration, mocking, 
+ tagging
 - **support for explicit programming/architecture** - a class has hold of all its 
  implementation details (apart from decoration, mocking and parameters which are by 
  their very nature foreign context driven)
@@ -76,7 +76,8 @@ logic
 
 ## basic usage
 
-A new dependency resolver can be initialized with no arguments.
+A new dependency resolver can be initialized with no arguments. Use this in your 
+`index.php`, bootstrap or configuration script.
 
 ```php
 use eArc\DI\DI;
@@ -84,7 +85,7 @@ use eArc\DI\DI;
 DI::init();
 ```
 
-After that classes and parameters can be accessed via the resolver.
+After that classes and parameters can be accessed via the di functions.
 
 ```php
 di_get(SomeClass::class);
@@ -126,7 +127,176 @@ function depending_on_injection($param)
 $result = depending_on_injection(42);
 ``` 
 
-## Parameters
+There is no need for any further dependency configuration!
+
+Of course you need to import the parameters though.
+
+## parameters
+
+```php
+```
+
+## decoration
+
+Maybe you write a library. You add some cool features and bugfixes every month. 
+You have a job, a wife, a few kids, so your reaction time on issues and merge
+requests does not perform very well. Your library is used as third party library 
+in production nevertheless. After an upgrade an error in a method is detected in 
+production. The programming engineers need a quick way to fix your library. They 
+do not want to fork your library, because keeping a forked library up to date could 
+be a big task. Wouldn't it be nice if they could just exchange the method. 
+
+`di_decorate` does the job. Extending the class, overwriting the erroneous method
+and decorating the original class is all it needs.
+
+```php
+di_decorate(Service::class, ServiceDecorator::class);
+
+get_class(di_get(Service::class)); // equals ServiceDecorator::class
+get_class(di_make(Service::class)); // equals ServiceDecorator::class
+```
+
+For debugging purpose `di_is_decorated` and `di_get_decorator` are handy functions.
+but be aware that it debugs the *current* decoration not the result of a decorator
+chain.
+
+```php
+di_decorate(Service::class, ServiceDecorator::class);
+di_decorate(ServiceDecorator::class, MegaDecorator::class);
+
+di_get_decorator(Service::class); // equals ServiceDecorator::class
+get_class(di_get(Service::class)); // equals MegaDecorator::class
+```
+
+To clear a decoration decorate a class by itself.
+
+```php
+di_decorate(Service::class, Service::class);
+
+di_is_decorated(Service::class); // equals false
+get_class(di_get(Service::class)); // equals Service::class
+```
+
+## factories
+
+earc/di does not know the concept of a factory. You may use the callables combined
+with method argument injection but best practice is to inject the factory itself. Thus
+the class keeps all the information where its dependencies come from.  
+
+```php
+public function construct()
+{
+    $factory = di_get(Factory::class)
+    $this->object = $factory->build();
+}
+```
+
+## tagging
+
+Maybe you solve a problem by implementing the [chain of responsibility - design pattern](https://sourcemaking.com/design_patterns/chain_of_responsibility).
+Only the third party software knows which services add to this implementation. This
+leaves four questions:
+1. How to register to a base service without instantiating it?
+2. How to tell the base service on instantiation without instantiating all handlers?  
+3. Where is the best place to write the information?
+4. Where is the best place to store the information?
+Three answers solves earc/di for you through tagging.
+
+The third party can store this piece of information by executing
+
+```php
+di_tag(Service002::class,'tag.name');
+di_tag(Service007::class,'tag.name');
+di_tag(Service014::class,'tag.name');
+```
+
+Your base class can retrieve the service classes by iterating over `di_get_tagged('tag.name')`
+
+```php
+foreach (di_get_tagged('tag.name') as $handlerName) {
+    $handler = di_get($handlerName);
+    if ($handler->canHandleTask($task)) {
+        $result = $handler->handleTask($task);
+        
+        return $result;
+    }
+}
+
+throw new TaskNotHandledException($task);
+```
+
+Of course the services should implement an interface and the base service should
+check for it to avoid failure on name conflicts or forgotten methods. And yes,
+logging handlers not implementing the interface is a good idea. But you know about
+the architecture your software needs (and can afford) best.
+
+## mocking
+
+In some testing libraries mocks are class objects manipulated by reflection. Thus
+you can't use decoration for replacing the original class. `di_mock` is made for
+this use cases. 
+   
+```php
+$getObj = di_get(Service::class);
+$makeObj = di_get(Service::class);
+
+$mockedService = TestCase::createMock(Service::class);
+di_mock(Service::class, $mockedService)
+
+Assert::assertSame($mockedService, di_get(Service::class)); // passes 
+Assert::assertSame($mockedService, di_make(Service::class)); // passes
+Assert::assertSame($getObj, di_get(Service::class)); // fails 
+Assert::assertSame($makeObj, di_make(Service::class)); // fails
+```
+
+You can check if an service is mocked by `di_is_mocked`.
+
+```php
+Assert::assertSame(true, di_is_mocked(ServiceClass)); // passes 
+Assert::assertSame(true, di_is_mocked(AnotherService::class)); // fails
+```
+
+If you need the real service again use `di_clear_mock`.
+
+```php
+di_clear_mock(Service::class)
+
+Assert::assertSame($mockedService, di_get(Service::class)); // fails 
+Assert::assertSame($mockedService, di_make(Service::class)); // fails
+Assert::assertSame($getObj, di_get(Service::class)); // passes
+Assert::assertSame($makeObj, di_make(Service::class)); // fails
+```
+
+You can even clear all existing mocks.
+
+```php
+di_clear_mock();
+```
+
+Mocking is applied after decoration. But the `di_*mock` functions does not take
+any decoration into account. That gives you more grip on the mocking process but
+more care is also needed. Keep in mind, you have to mock the decorator not the decorated
+class.
+
+```php
+di_mock(Service::class, (object) ['iAmMock' => 1]);
+di_mock(ServiceDecorator::class, (object) ['iAmMock' => 2]);
+di_decorate(Service::class, ServiceDecorator::class);
+
+Assert::assertSame(true, di_is_mocked(Service::class)) // passes
+Assert::assertSame(true, di_is_mocked(ServiceDecorator::class)) // passes
+
+Assert::assertSame(1, di_get(Service::class)->iAmMock) // fails
+Assert::assertSame(2, di_get(Service::class)->iAmMock) // passes
+Assert::assertSame(2, di_get(ServiceDecorator::class)->iAmMock) // passes
+```
+
+## troubleshooting
+
+Circular dependency Exception:
+```
+$ PHP Fatal error:  Uncaught Error: Maximum function nesting level of '256' reached, aborting! 
+```
 
 --
 ...
@@ -267,133 +437,8 @@ Hint: Since there is no way to distinct between a key and a string argument
 equal to a key you have to use the argument via parameter if the string that 
 need to be passed to the constructor conflicts with an existing key.
 
-### configuration using an factory
 
-If you need some calculation to get the constructor arguments right you can use 
-a closure as factory. The closure gets evaluated on the first `get()` and
-on every `make()` call to the class.
 
-```php
-$dc->set(
-    yourClass::class,
-    function() {
-        //...do some calculation...
-        return new yourClass(/*...the calculated arguments...*/);
-    } 
-);
-```
-
-You can even use the dependency injection inside the factory.
-
-```php
-$dc->set(
-    yourClass::class,
-    function() use ($dc) {
-        //...do some calculation with $dc->get(iNeedThisClass::class)->myMethod()...
-        return new yourClass($dc->get(someDependency::class), /*...the calculated arguments...*/);
-    } 
-);
-```
-
-If you already have an factory statically attached to an class you need to wrap
-it in a closure. 
-
-```php
-$dc->set(
-    yourClassName::class,
-    function() {
-        return yourFactoryClassName::build();
-    } 
-);
-```
-
-Keep in mind: Factory methods that are not static need their class to be
-instantiated. If you use the dependency container this happens on the first
-call. In the example below if the first call to `yourClassName::class` happens
-the `yourFactoryClassName::class` gets instantiated.
-
-```php
-$dc->set(
-    yourClassName::class,
-    function() use ($dc) {
-        return $dc->get(yourFactoryClassName::class)->build();
-    } 
-);
-```
-
-### configuration by direct instantiation
-
-The eArc dependency container can be used as plain container. Thus you can set
-your objects the direct way. Please note that a direct instantiated object does
-not benefit of lazy instantiation.   
-
-```php
-$dc->set(
-    yourClass::class,
-    new yourClass(...arguments go here...) 
-);
-```
-
-Hint: You can store everything in the underlying plain container. If you want
-to store a closure or an array and use a class name as key wrap them in a 
-closure.
-
-```php
-$dc->set(
-    FooReferencingAnClosure::class,
-    function() {
-        return function() {
-            // ... the closure body ...
-        }
-    }
-);
-
-$dc->set(
-    BarReferencingAnArray::class,
-    function() {
-        return [
-            // ... the array contents ...
-        ]
-    }
-);
-```
-
-### decoration of a class
-
-The best way of decorating a class is to use a closure as proxy:
-
-```php
-$dc->set(FooAsDecorator::class, /* configuration */);
-$dc->set(
-    BarAsDecorated::class,
-    function() use ($dc) {
-        return $dc->get(FooAsDecorator::class);
-    }
-)
-```
-
-## using load
-
-To set up a whole bunch of dependencies one by one is not convenient. The
-`load()` method uses the array syntax to get that job done faster and cleaner.
-The item keys are hereby the array keys and the array values are mapped to the 
-item values.  
-
-```php
-$dc->load([
-    'firstParameter' => 42,
-    FirstClass::class => [SecondClass::class, SeventhClass::class, ...],
-    SecondClass::class => function() {
-        return FactoryClass::build();
-    },
-    ThirdClass::class => [SomeOtherClass::class],
-    FourthClass::class => ['firstParameter', 'iAmNotAParameterButAString'],
-    FifthClass::class => ['I', 'have', 5, 'plain', 'arguments'],
-    SomeOtherClass::class => [],
-    'secondParameter' => 23,
-    ... 
-]);
-```
 
 ## exceptions
 
@@ -416,8 +461,6 @@ $dc->load([
 
 
 ## advanced usage  
-
-### flags
 
 ### tree typed dependencies
 
@@ -476,97 +519,14 @@ third party stuff. Keeping track of several dependency container could go messy.
 At this stage container merging comes into play. Creating one to rule them all
 makes your live easy again.    
 
-```php
-$dcAlmighty = new DependencyContainer();
-$dcAlmighty->merge($dc1);
-$dcAlmighty->merge($dc2);
-$dcAlmighty->merge($dc3);
-$dcAlmighty->merge($dc0);
-```
-
-Since the ruling container only hold references but the referenced elements 
-remain in the original container you can even merge an php-di/php-di container 
-into an earc/di container without loosing the laziness of each one.
-
-The container need to implement the psr `ContainerInterface`. This interface
-only supports `has()` and `get()`. Hence if you want to use `make()` the 
-container has to implement the earc `DependencyInjectionInterface`. Container
-who does not support the earc `DependencyInjectionInterface` but support a 
-`make()` method like php-di/php-di need a wrapper/proxy for using `make()` in 
-the merged state.
- 
-```php
-use eArc\DI\Interfaces\DependencyInjectionInterface;
-use Psr\Container\ContainerInterface;
-
-class DICWrapper implements DependencyInjectionInterface
-{
-    protected $container;
-    
-    public function __construct(ContainerInterface $container)
-    {
-        $this->container = $container
-    }
-    
-    public function has()
-    {
-        return $this->container->has();
-    }
-    
-    public function get()
-    {
-        return $this->container->get();
-    }
-    
-    public function make()
-    {
-        return $this->container->makeFunctionOfContainer();
-    }
-}
-```
-
-```php
-$foreignContainer = ForeignContainerFactory::build(/* ... configuration ... */);
-$wrappedForeignContainer = new DICWrapper($foreignContainer);
-
-$dc->merge($wrappedForeignContainer);
-
-$fooObject = $dc->make(FooFromForeignContainer::class);
-```
 
 #### container merging at construction time
-
-Some advanced usages (like 
-[earc/components-di](https://github.com/Koudela/eArc-component-di)) need a 
-mechanism to provide some object getters only at construction time of an object.
-To use this container merging at construction time pass an closure to the
-container as second construction argument.
-
-```php
-use eArc\DI\DependencyContainer;
-use eArc\PayloadContainer\Exceptions\ItemNotFoundException;
-
-$otherContainer = // ... configuration ...
-
-$dc = new DependencyContainer(null, function(&$nameReturnsObjectOrParameter) use ($otherContainer) {
-    if ($otherContainer->has($nameReturnsObjectOrParameter) {
-        $nameReturnsObjectOrParameter = $otherContainer->get($nameReturnsObjectOrParameter);
-        
-        return true; 
-    }
-    
-    return false;
-});
-``` 
 
 ### performance considerations
 
 Objects retrieved by `get()` can not be garbage collected until the dependency
 container is not referenced any more. If you use an object only once or for a 
-tiny moment it might save a bit of memory if you use `make()` instead. (Hint:
-`make()` uses `get()` for its dependencies to reduce the calculation and 
-configuration overhead. There is no way to circumvent this behaviour by 
-now/version 1.0.) 
+tiny moment it might save a bit of memory if you use `make()` instead. 
 
 Even though there is a performance gain through lazy evaluated dependencies
 the configuration of the unused classes is parsed and loaded into memory by PHP.
@@ -575,14 +535,6 @@ business domains and load them in a lazy manner too. You can dynamically call
 load to achieve this or use
 [earc/components-di](https://github.com/Koudela/eArc-component-di).
 
-### subset generation/decoupling dependencies
-
-Injecting the dependency container of the controller into the business classes 
-is a bad but unfortunate popular habit. At first sight it makes life easy, but
-it hides the dependencies and every programmer need to know the whole code to
-keep track of dependencies. On the other hand injecting the classes itself into
-the business api kills the benefits of lazy evaluation. To get the best of both
-worlds the earc dependency container supports subset generation.
 
 The aim of subset generation was given up. You can achieve something similar
 using [earc/components-di](https://github.com/Koudela/eArc-component-di).
@@ -596,6 +548,31 @@ There is even a way to combine it with the symfony container if you want to test
 or migrate your symfony app over a longer time period.
 
 ## releases
+
+### release v2.0
+
+* complete rewrite based on a new view on dependency injection
+
+* usage of global functions for injection
+
+* support for container merging dropped - in favour of customization (via extending
+ or interfaces)
+
+* support for flags dropped - all can now be done explicit
+
+* support for tree typed dependencies dropped - extend your classes with different
+ constructors or use a factory to support different injection types (its more explicit 
+ by the way)
+
+* support for circular dependency detection dropped - in favour of php doing the job 
+
+* all types of dependency configuration are dropped - in favour of pure injection
+ (Yes, its true! There is no dependency configuration anymore just parameter import,
+ decoration and mocking.)
+
+* dependency on other libraries dropped - in favour of a lightweight architecture
+
+
 
 ### release v1.0
 

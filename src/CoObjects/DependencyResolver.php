@@ -12,9 +12,7 @@
 namespace eArc\DI\CoObjects;
 
 use eArc\DI\Exceptions\NotFoundDIException;
-use eArc\DI\Exceptions\ExecuteCallableDIException;
 use eArc\DI\Exceptions\MakeClassDIException;
-use eArc\DI\Interfaces\DICallableInterface;
 use eArc\DI\Interfaces\ResolverInterface;
 use Exception;
 
@@ -22,7 +20,7 @@ abstract class DependencyResolver implements ResolverInterface
 {
     protected static $instance = [];
     protected static $decorator = [];
-    protected static $callables = [];
+    protected static $tags = [];
     protected static $mock = [];
 
     public static function get(string $fQCN): object
@@ -57,13 +55,10 @@ abstract class DependencyResolver implements ResolverInterface
         }
 
         try {
-            $class = new $fQCN();
+            return new $fQCN();
         } catch (Exception $e) {
             throw new MakeClassDIException($e->getMessage(), $e->getCode(), $e);
         }
-            self::executeCallables($class, $fQCN);
-
-            return $class;
     }
 
     public static function has(string $fQCN): bool
@@ -97,7 +92,6 @@ abstract class DependencyResolver implements ResolverInterface
         }
 
         self::$decorator[$fQCN] = $fQCNReplacement;
-        unset(self::$instance[$fQCN]);
     }
 
     public static function isDecorated(string $fQCN): bool
@@ -118,84 +112,28 @@ abstract class DependencyResolver implements ResolverInterface
         return self::$decorator[$fQCN];
     }
 
-    public static function registerCallable(DICallableInterface $callable): void
+    public static function tag(string $fQCN, string $name): void
     {
-        self::$callables[$callable->getClassName()][] = $callable;
+        if (!static::has($fQCN)) {
+            throw new NotFoundDIException(sprintf('%s is no fully qualified class name.', $fQCN));
+        }
+
+        self::$tags[$name][$fQCN] = true;
     }
 
-    public static function hasRegisteredCallables(string $fQCN=null, array $tags=[]): bool
+    public static function getTagged(string $name): iterable
     {
-        if (empty($tags)) {
-            return null !== $fQCN ? isset(self::$callables[$fQCN]) : !empty(self::$callables);
-        }
-
-        $callables = null !== $fQCN ? [self::$callables[$fQCN]] : self::$callables;
-
-        foreach ($callables as $classCallables) {
-            foreach ($classCallables as $callable) {
-                if ($callable->isTaggedBy($tags)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    public static function executeCallables(object $class, string $fQCN, array $tags=[]): void
-    {
-        if (!isset(self::$callables[$fQCN])) {
-            return;
-        }
-
-        try {
-            foreach (self::$callables[$fQCN] as $callable) {
-                if ($callable->isTaggedBy($tags)) {
-                    call_user_func($callable, $class, ...$callable->getArguments());
-                }
-            }
-        } catch (Exception $e) {
-            throw new ExecuteCallableDIException($e->getMessage(), $e->getCode(), $e);
+        foreach (self::$tags[$name] as $fQCN => $value) {
+            yield $fQCN;
         }
     }
 
-    public static function getIterableForRegisteredCallables(string $fQCN=null, array $tags=[]): iterable
+    public static function clearTags(string $name, string $fQCN=null): void
     {
-        $callables = null !== $fQCN ? [self::$callables[$fQCN]] : self::$callables;
-
-        foreach ($callables as $classCallables) {
-            foreach ($classCallables as $callable) {
-                if ($callable->isTaggedBy($tags)) {
-                        yield $callable;
-                }
-            }
-        }
-    }
-
-    public static function clearRegisteredCallables(string $fQCN=null, array $tags=[]): void
-    {
-        if (empty($tags)) {
-            if (null !== $fQCN) {
-                unset(self::$callables[$fQCN]);
-
-                return;
-            }
-
-            self::$callables = [];
-
-            return;
-        }
-
-        $callables = null !== $fQCN ? [self::$callables[$fQCN]] : self::$callables;
-
-        foreach ($callables as $fQCN => $classCallables) {
-            $stillValidCallables = [];
-            foreach ($classCallables as $callable) {
-                if (!$callable->isTaggedBy($tags)) {
-                    $stillValidCallables[] = $callable;
-                }
-            }
-            self::$callables[$fQCN] = $stillValidCallables;
+        if (null === $fQCN) {
+            unset(self::$tags[$name]);
+        } else {
+            unset(self::$tags[$name][$fQCN]);
         }
     }
 
@@ -204,8 +142,17 @@ abstract class DependencyResolver implements ResolverInterface
         self::$mock[$fQCN] = $mock;
     }
 
-    public static function clearMock(string $fQCN): void
+    public static function isMocked(string $fQCN): bool
     {
-        unset(self::$mock[$fQCN]);
+        return isset(self::$mock[$fQCN]);
+    }
+
+    public static function clearMock(string $fQCN=null): void
+    {
+        if (null === $fQCN) {
+            self::$mock = [];
+        } else {
+            unset(self::$mock[$fQCN]);
+        }
     }
 }

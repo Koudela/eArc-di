@@ -35,7 +35,6 @@ namespace {
 
     use eArc\DI\CoObjects\DependencyResolver;
     use eArc\DI\Exceptions\DIException;
-    use eArc\DI\Interfaces\DICallableInterface;
     use eArc\DI\CoObjects\ParameterBag;
     use eArc\DI\Interfaces\ParameterBagInterface;
     use eArc\DI\Interfaces\ResolverInterface;
@@ -154,60 +153,36 @@ namespace {
                 }
             }
 
-            if (!function_exists('di_register_callable')) {
+            if (!function_exists('di_tag')) {
                 /**
-                 * @param DICallableInterface $callable
-                 */
-                function di_register_callable(DICallableInterface $callable): void
-                {
-                    BootstrapEArcDI::getResolver()::registerCallable($callable);
-                }
-            }
-
-            if (!function_exists('di_has_registered_callables')) {
-                /**
-                 * @param string|null $fQCN
-                 * @param array $tags
-                 * @return bool
-                 */
-                function di_has_registered_callables(string $fQCN = null, array $tags = []): bool
-                {
-                    return BootstrapEArcDI::getResolver()::hasRegisteredCallables($fQCN, $tags);
-                }
-            }
-
-            if (!function_exists('di_execute_callables')) {
-                /**
-                 * @param object $class
                  * @param string $fQCN
-                 * @param array $tags
+                 * @param string $name
                  */
-                function di_execute_callables(object $class, string $fQCN, array $tags = []): void
+                function di_tag(string $fQCN, string $name): void
                 {
-                    BootstrapEArcDI::getResolver()::executeCallables($class, $fQCN, $tags);
+                    BootstrapEArcDI::getResolver()::tag($fQCN, $name);
                 }
             }
 
-            if (!function_exists('di_get_iterable_for_registered_callables')) {
+            if (!function_exists('di_get_tagged')) {
                 /**
-                 * @param string|null $fQCN
-                 * @param array $tags
+                 * @param string $name
                  * @return iterable
                  */
-                function di_get_iterable_for_registered_callables(string $fQCN = null, array $tags = []): iterable
+                function di_get_tagged(string $name): iterable
                 {
-                    return BootstrapEArcDI::getResolver()::getIterableForRegisteredCallables($fQCN, $tags);
+                    return BootstrapEArcDI::getResolver()::getTagged($name);
                 }
             }
 
-            if (!function_exists('di_clear_registered_callables')) {
+            if (!function_exists('di_clear_tags')) {
                 /**
+                 * @param string $name
                  * @param string|null $fQCN
-                 * @param array $tags
                  */
-                function di_clear_registered_callables(string $fQCN = null, array $tags = []): void
+                function di_clear_tags(string $name, string $fQCN=null): void
                 {
-                    BootstrapEArcDI::getResolver()::clearRegisteredCallables($fQCN, $tags);
+                    BootstrapEArcDI::getResolver()::clearTags($name, $fQCN);
                 }
             }
 
@@ -222,11 +197,21 @@ namespace {
                 }
             }
 
+            if (!function_exists('di_is_mocked')) {
+                /**
+                 * @param string $fQCN
+                 */
+                function di_is_mocked(string $fQCN): void
+                {
+                    BootstrapEArcDI::getResolver()::isMocked($fQCN);
+                }
+            }
+
             if (!function_exists('di_clear_mock')) {
                 /**
                  * @param string $fQCN
                  */
-                function di_clear_mock(string $fQCN): void
+                function di_clear_mock(string $fQCN=null): void
                 {
                     BootstrapEArcDI::getResolver()::clearMock($fQCN);
                 }

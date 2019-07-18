@@ -12,7 +12,6 @@
 namespace eArc\DI\Interfaces;
 
 use eArc\DI\Exceptions\NotFoundDIException;
-use eArc\DI\Exceptions\ExecuteCallableDIException;
 use eArc\DI\Exceptions\MakeClassDIException;
 
 /**
@@ -23,19 +22,19 @@ interface ResolverInterface
     /**
      * Returns an instance of the class identified by its fully qualified class name.
      * The resolver returns the same instance for successive calls unless `clearCache`
-     * or `decorate` are used for the same identifier in between.
+     * is used for the same identifier in between.
      *
      * Hint: Don't rely on the `singleton` behaviour of `get`. Its main purpose are
      * performance considerations. If your architecture need to get always the same
-     * instance for a class use a factory or a real singleton instead.
+     * instance for a class make it explicit and use a factory or a real singleton
+     * instead.
      *
      * @param string $fQCN Identifier of the class to resolve.
      *
      * @return object An instance.
      *
-     * @throws NotFoundDIException        No class was found for **this** identifier.
-     * @throws MakeClassDIException       Error while instantiating the class.
-     * @throws ExecuteCallableDIException Error while executing the callables.
+     * @throws NotFoundDIException  No class was found for **this** identifier.
+     * @throws MakeClassDIException Error while instantiating the class.
      */
     public static function get(string $fQCN): object;
 
@@ -53,9 +52,8 @@ interface ResolverInterface
      *
      * @return object The new instance.
      *
-     * @throws NotFoundDIException        No class was found for **this** identifier.
-     * @throws MakeClassDIException       Error while instantiating the class.
-     * @throws ExecuteCallableDIException Error while executing the callables.
+     * @throws NotFoundDIException  No class was found for **this** identifier.
+     * @throws MakeClassDIException Error while instantiating the class.
      */
     public static function make(string $fQCN): object;
 
@@ -127,76 +125,39 @@ interface ResolverInterface
      */
     public static function getDecorator(string $fQCN): string;
 
-
     /**
-     * Registers a callable to a class identified by its fully qualified class name.
-     * Each time a **new** instance is created by `get($fQCN)` or `make($fQCN)`
-     * the callable is called just before the instance is returned.
+     * Adds a tag to a class.
      *
-     * Hint: Use this method to register some class X to a class $fQCN if the class
-     * X can not or must not be registered by design.
+     * @param string $fQCN The fully qualified class name of the class to tag.
+     * @param string $name The tag name.
      *
-     * @param DICallableInterface $callable
+     * @throws NotFoundDIException The fully qualified class name can not be resolved.
      */
-    public static function registerCallable(DICallableInterface $callable): void;
+    public static function tag(string $fQCN, string $name): void;
 
     /**
-     * Checks whether at least one callable is registered to a class identified by
-     * the fully qualified class name. If null is passed instead of the fully qualified
-     * class name the check applies to all classes. If `$tags` are not empty the
-     * check applies to callables with the specified tags only.
+     * Returns an iterable for iterating over all fully qualified class names being
+     * tagged by a tag.
      *
-     * @param string|null $fQCN The identifier of the class or null.
-     * @param array $tags Filter by a group of tags.
-     *
-     * @return bool
-     */
-    public static function hasRegisteredCallables(string $fQCN=null, array $tags=[]): bool;
-
-    /**
-     * Executes the callables registered to a class identified by the fully qualified
-     * class name. If `$tags` are not empty the callables with the specified tags
-     * are applied only.
-     *
-     * Hint: Use this method in the constructor if you decorate a class and want to
-     * see the callables from the decorated class executed.
-     *
-     * @param object $class The object the callables get applied to.
-     * @param string $fQCN  The fully qualified class name of the class the callables
-     * get applied to.
-     * @param array  $tags  Filter by a group of tags.
-     *
-     * @throws ExecuteCallableDIException Error while executing the callables.
-     */
-    public static function executeCallables(object $class, string $fQCN, array $tags=[]): void;
-
-    /**
-     * Returns an iterable for all callables registered to a class identified by the
-     * fully qualified class name. If null is passed instead of the fully qualified
-     * class name this applies to all classes. If `$tags` are not empty the
-     * check applies to callables with the specified tags only.
-     *
-     * @param string|null $fQCN The identifier of the class or null.
-     * @param array $tags Filter by a group of tags.
+     * @param string $name The tag name.
      *
      * @return iterable
      */
-    public static function getIterableForRegisteredCallables(string $fQCN=null, array $tags=[]): iterable;
+    public static function getTagged(string $name): iterable;
 
     /**
-     * Unregisters all callables registered to a class identified by the fully qualified
-     * class name. If null is passed instead of the fully qualified class name this
-     * applies to all classes. If `$tags` are not empty the callables with the specified
-     * tags are getting unregistered only.
+     * Clears a tag from a class identifier. If the class identifier is null all
+     * tags of the same name are cleared.
      *
-     * @param string|null $fQCN The identifier of the class or null.
-     * @param array $tags Filter by a group of tags.
+     * @param string      $name The tag name.
+     * @param string|null $fQCN The fully qualified class name or null.
      */
-    public static function clearRegisteredCallables(string $fQCN=null, array $tags=[]): void;
+    public static function clearTags(string $name, string $fQCN=null): void;
 
     /**
      * Mocks a class. `get($fQCN)` and `make($fQCN)` always return the object passed
-     * as mock.
+     * as mock. Decoration is applied before mocking. You need to mock the decorator
+     * not the decorated class.
      *
      * @param string $fQCN The identifier of the class to mock.
      * @param object $mock The Mock.
@@ -204,9 +165,19 @@ interface ResolverInterface
     public static function mock(string $fQCN, object $mock): void;
 
     /**
-     * Unset a mock. `get($fQCN)` and `make($fQCN)` behave again normally.
+     * Checks whether a class is mocked.
      *
-     * @param string $fQCN The identifier of the mocked class.
+     * @param string $fQCN The identifier of the possibly mocked
+     *
+     * @return bool
      */
-    public static function clearMock(string $fQCN): void;
+    public static function isMocked(string $fQCN): bool;
+
+    /**
+     * Unset a mock. `get($fQCN)` and `make($fQCN)` behave again normally. If null
+     * is passed as argument all mocks are cleared.
+     *
+     * @param string|null $fQCN The identifier of the mocked class.
+     */
+    public static function clearMock(string $fQCN=null): void;
 }
