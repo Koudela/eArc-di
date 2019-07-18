@@ -17,17 +17,12 @@ which builds on the top of earc/di.
  - [pro/cons](#procons)
  - [basic usage](#basic-usage)
  - [parameters](#parameters)
- - [decoration](#decoration)
  - [factories](#factories)
  - [tagging](#tagging)
+ - [decoration](#decoration)
  - [mocking](#mocking)
- - [dependency configuration](#dependency-configuration)
-   - [configuration via constructor arguments](#configuration-via-constructor-arguments)
  - [exceptions](#exceptions)
  - [advanced usage](#advanced-usage)
-   - [tree typed dependencies](#tree-typed-dependencies)
-   - [container merging](#container-merging)
-   - [container merging at construction time](#container-merging-at-construction-time) 
    - [performance considerations](#performance-considerations)
  - [releases](#releases)
    - [release v2.0](#release-v20)
@@ -136,52 +131,11 @@ Of course you need to import the parameters though.
 ```php
 ```
 
-## decoration
-
-Maybe you write a library. You add some cool features and bugfixes every month. 
-You have a job, a wife, a few kids, so your reaction time on issues and merge
-requests does not perform very well. Your library is used as third party library 
-in production nevertheless. After an upgrade an error in a method is detected in 
-production. The programming engineers need a quick way to fix your library. They 
-do not want to fork your library, because keeping a forked library up to date could 
-be a big task. Wouldn't it be nice if they could just exchange the method. 
-
-`di_decorate` does the job. Extending the class, overwriting the erroneous method
-and decorating the original class is all it needs.
-
-```php
-di_decorate(Service::class, ServiceDecorator::class);
-
-get_class(di_get(Service::class)); // equals ServiceDecorator::class
-get_class(di_make(Service::class)); // equals ServiceDecorator::class
-```
-
-For debugging purpose `di_is_decorated` and `di_get_decorator` are handy functions.
-but be aware that it debugs the *current* decoration not the result of a decorator
-chain.
-
-```php
-di_decorate(Service::class, ServiceDecorator::class);
-di_decorate(ServiceDecorator::class, MegaDecorator::class);
-
-di_get_decorator(Service::class); // equals ServiceDecorator::class
-get_class(di_get(Service::class)); // equals MegaDecorator::class
-```
-
-To clear a decoration decorate a class by itself.
-
-```php
-di_decorate(Service::class, Service::class);
-
-di_is_decorated(Service::class); // equals false
-get_class(di_get(Service::class)); // equals Service::class
-```
-
 ## factories
 
-earc/di does not know the concept of a factory. You may use the callables combined
-with method argument injection but best practice is to inject the factory itself. Thus
-the class keeps all the information where its dependencies come from.  
+earc/di does not know the concept of a factory. The best practice is to inject the 
+factory itself. Thus the class keeps all the information where its dependencies come 
+from.  
 
 ```php
 public function construct()
@@ -196,10 +150,12 @@ public function construct()
 Maybe you solve a problem by implementing the [chain of responsibility - design pattern](https://sourcemaking.com/design_patterns/chain_of_responsibility).
 Only the third party software knows which services add to this implementation. This
 leaves four questions:
+
 1. How to register to a base service without instantiating it?
 2. How to tell the base service on instantiation without instantiating all handlers?  
 3. Where is the best place to write the information?
 4. Where is the best place to store the information?
+
 Three answers solves earc/di for you through tagging.
 
 The third party can store this piece of information by executing
@@ -229,6 +185,47 @@ Of course the services should implement an interface and the base service should
 check for it to avoid failure on name conflicts or forgotten methods. And yes,
 logging handlers not implementing the interface is a good idea. But you know about
 the architecture your software needs (and can afford) best.
+
+## decoration
+
+Maybe you write a library. You add some cool features and bugfixes every month. 
+You have a job, a wife, a few kids, so your reaction time on issues and merge
+requests does not perform very well. Your library is used as third party library 
+in production nevertheless. After an upgrade an error in a method is detected in 
+production. The programming engineers need a quick way to fix your library. They 
+do not want to fork your library, because keeping a forked library up to date could 
+be a big task. Wouldn't it be nice if they could just exchange the method. 
+
+`di_decorate` does the job. Extending the class, overwriting the erroneous method
+and decorating the original class is all it needs.
+
+```php
+di_decorate(Service::class, ServiceDecorator::class);
+
+get_class(di_get(Service::class)); // equals ServiceDecorator::class
+get_class(di_make(Service::class)); // equals ServiceDecorator::class
+```
+
+For debugging purpose `di_is_decorated` and `di_get_decorator` are handy functions.
+But be aware that it debugs the *current* decoration, not the result of a decorator
+chain.
+
+```php
+di_decorate(Service::class, ServiceDecorator::class);
+di_decorate(ServiceDecorator::class, MegaDecorator::class);
+
+di_get_decorator(Service::class); // equals ServiceDecorator::class
+get_class(di_get(Service::class)); // equals MegaDecorator::class
+```
+
+To clear a decoration decorate a class by itself.
+
+```php
+di_decorate(Service::class, Service::class);
+
+di_is_decorated(Service::class); // equals false
+get_class(di_get(Service::class)); // equals Service::class
+```
 
 ## mocking
 
@@ -293,10 +290,33 @@ Assert::assertSame(2, di_get(ServiceDecorator::class)->iAmMock) // passes
 
 ## troubleshooting
 
-Circular dependency Exception:
+earc/di has dropped circular dependency detection in favour of performance. If you
+experience an error like the following in the earc/di code its cause is most likely
+a circular dependency of the classes. 
+
 ```
 $ PHP Fatal error:  Uncaught Error: Maximum function nesting level of '256' reached, aborting! 
 ```
+## exceptions
+
+ * An `ItemNotFoundException` is thrown if the item does not exists or `make()` 
+ is called but there is no configuration for the class.
+ 
+ * An `InvalidFactoryException` if you call `make()` but the items name is not
+ a fully qualified class name.
+
+ * An `InvalidObjectConfigurationException` is thrown if the class is not 
+ configured properly.
+ 
+ * An `CircularDependencyException` is thrown if the classes configuration 
+ depends in some way on the class itself. If this exception is thrown in your 
+ app something is wrong with your dependency container configuration.
+
+ * An `ItemOverwriteException` is thrown if the item name is already set. If 
+ it is by purpose you can catch the exception. The item is set before the
+ exception gets thrown.
+
+
 
 --
 ...
@@ -335,99 +355,7 @@ $logger = new Monolog\Logger();
 $dc->set('logger', $logger);
 ``` 
 
-If you overwrite an existing item `ItemOverwriteException` is thrown. If it is 
-by purpose you can catch the exception and go on as if it never happened. The 
-item is set before the exception gets thrown.
-
-Is the items name a class name and the item is an array the array is seen as
-list of arguments for the class.
-
-Is the items name a class name and the item is closure the closure is seen as 
-factory for the object. 
-
-Hint: You can use closures or objects to overwrite class name keys with the 
-wrong class object. That might be useful in some testing context or if you need
-to reference some objects by their extended child class in some extending app
-context (in symfony this is called decoration).
-
 ## dependency configuration 
-
-A dependency configuration of a single class consists of the fully qualified
-class name as key and a build instruction.
-
-```php
-$dc->set(FooClass::class, /* build instruction goes here */);
-```
-
-There are three types of build instructions:
-1. an configuration array of constructor arguments including plain parameter,
-parameter names or class names
-2. an inline factory/closure
-3. the object itself
-
-### configuration via constructor arguments
-
-The usage of the configuration array is basically the same as using the `new`
-operator.
-
-```php
-$obj = new yourClassName(
-    'IAmOnlyAPlainString',
-    200,
-    ['An', 'Array', 'Of', '5', 'Strings'],
-    null
-);
-```
-is the same as 
-```php
-$dc->set(
-    yourClassName::class,
-    [
-        'IAmOnlyAPlainString',
-        200,
-        ['An', 'Array', 'Of', '5', 'Strings'],
-        null
-    ]
-);
-$obj = $dc->get(yourClassName::class);
-```
-
-The dependency magic comes into play if classes get instantiated by other
-classes. String arguments that are used as keys are interpreted as references to
-a parameter or a class instance.
-
-```php
-$obj1 = new 1stClass(/* here goes the configuration */);
-$parameter = 'Hello World!'
-$obj2 = new 2ndClass($obj1, $parameter);
-```
-is the same as 
-```php
-$dc->set(1stClass::class, [/* here goes the configuration */]);
-$dc->set(2ndClass::class, [1stClass::class, 'myParameter']);
-$dc->set('myParameter', 'Hello World!');
-
-$obj2 = $dc->get(2ndClass::class);
-```
-
-You can use the `set()` calls in any order you like.
-
-As you might have guessed you can mix direct parameters, parameter items and
-class names to your liking. 
-
-```php
-$dc->set(
-    yourClassName::class, 
-    [
-        firstArgument::class,
-        'IAmOnlyAPlainString', 
-        'IAmAParameter', 
-        fourthArgument::class,
-        ['An', 'Array', 'Of', 'Strings'],
-        null
-    ]
-);
-```
 
 In the case of class configuration via constructor arguments the use of the 
 fully qualified class name as key is mandatory. If you want to use another key 
@@ -440,76 +368,8 @@ need to be passed to the constructor conflicts with an existing key.
 
 
 
-## exceptions
-
- * An `ItemNotFoundException` is thrown if the item does not exists or `make()` 
- is called but there is no configuration for the class.
- 
- * An `InvalidFactoryException` if you call `make()` but the items name is not
- a fully qualified class name.
-
- * An `InvalidObjectConfigurationException` is thrown if the class is not 
- configured properly.
- 
- * An `CircularDependencyException` is thrown if the classes configuration 
- depends in some way on the class itself. If this exception is thrown in your 
- app something is wrong with your dependency container configuration.
-
- * An `ItemOverwriteException` is thrown if the item name is already set. If 
- it is by purpose you can catch the exception. The item is set before the
- exception gets thrown.
-
 
 ## advanced usage  
-
-### tree typed dependencies
-
-There may be times when you need the same objects instantiated differently for
-different objects. You can hide the different dependencies behind a factory or
-make them explicit through the use of tree typed dependencies.
-
-Instead of only passing the `className::class` as configuration argument the 
-eArc dependency container accepts the `className::class` as key pointing to a
-separate configuration.
-
-```php
-$dc->load([
-    A::class => ['majorConfigurationString'],
-    B::class => [A::class],
-    C::class => [
-        A::class => ['minorConfiguration']
-    ]
-]);
-```
-
-Thus each class can be defined individually on a deeper level without harming
-the configuration on higher levels. You get a tree of dependencies corresponding
-to your nested configuration. That is a tree typed dependency configuration.   
-
-```php
-$dc->load([
-    A::class => [
-        B1::class => [
-            C::class => ['argumentString1'],
-            D::class
-        ],
-        B2::class => [
-            ...
-        ],
-        D::class => ['dConfig1'],
-        ...
-    ],
-    C::class => ['argumentString2'],
-    D::class => ['dConfig2'],
-    E::class => [D::class],
-    ...
-]);
-```
-
-The eArc dependency injection uses the configuration on the nearest level. In
-the example the `B1::class` uses the `D::class` configuration wrapped in 
-`A::class` whereas `E::class` uses the `D::class` configuration at the top 
-level.
 
 ### container merging
 
