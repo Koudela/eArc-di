@@ -47,7 +47,7 @@ class B extends A
     }
 }
 
-class C
+class C implements I1
 {
     protected $a;
     protected $b;
@@ -68,7 +68,7 @@ class C
         return $this->b;
     }
 }
-
+interface I1 {}
 class D extends A
 {
     public function sayHello() {
@@ -79,7 +79,8 @@ class D extends A
 DI::init();
 di_import_param(['p1' => 'Hase', 'p2' => ['px' => 'Igel']]);
 /* @var C $c */
-$c = di_get(C::class);
+#di_decorate(I1::class, C::class);
+$c = di_get(I1::class, C::class);
 $c->getB()->getA()->sayHello();
 $c->getA()->sayHello();
 $c->getB()->sayHello();

@@ -11,6 +11,7 @@
 
 namespace eArc\DI\Interfaces;
 
+use eArc\DI\Exceptions\InvalidArgumentException;
 use eArc\DI\Exceptions\MakeClassException;
 
 /**
@@ -25,14 +26,14 @@ interface ResolverInterface
      *
      * Hint: Don't rely on the `singleton` behaviour of `get`. Its main purpose are
      * performance considerations. If your architecture need to get always the same
-     * instance for a class make it explicit and use a factory or a real singleton
-     * instead.
+     * instance for a class make it explicit and use a real singleton instead.
      *
      * @param string $fQCN Identifier of the class to resolve.
      *
      * @return object An instance.
      *
-     * @throws MakeClassException Error while instantiating the class.
+     * @throws MakeClassException       Error while instantiating the class.
+     * @throws InvalidArgumentException The decorator is no subclass of the identifier
      */
     public static function get(string $fQCN): object;
 
@@ -50,7 +51,8 @@ interface ResolverInterface
      *
      * @return object The new instance.
      *
-     * @throws MakeClassException Error while instantiating the class.
+     * @throws MakeClassException       Error while instantiating the class.
+     * @throws InvalidArgumentException The decorator is no subclass of the identifier
      */
     public static function make(string $fQCN): object;
 

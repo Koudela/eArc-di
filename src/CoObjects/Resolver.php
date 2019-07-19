@@ -11,11 +11,12 @@
 
 namespace eArc\DI\CoObjects;
 
+use eArc\DI\Exceptions\InvalidArgumentException;
 use eArc\DI\Exceptions\MakeClassException;
 use eArc\DI\Interfaces\ResolverInterface;
 use Exception;
 
-abstract class DependencyResolver implements ResolverInterface
+abstract class Resolver implements ResolverInterface
 {
     protected static $instance = [];
     protected static $decorator = [];
@@ -24,31 +25,58 @@ abstract class DependencyResolver implements ResolverInterface
 
     public static function get(string $fQCN): object
     {
-        if (isset(self::$decorator[$fQCN])) {
-            return static::get(self::$decorator[$fQCN]);
+        $decorator = static::resolveDecoratorChain($fQCN);
+
+        if (isset(self::$mock[$decorator])) {
+            return self::$mock[$decorator];
         }
 
-        if (isset(self::$mock[$fQCN])) {
-            return self::$mock[$fQCN];
+        static::checkTypeHint($fQCN, $decorator);
+
+        if (!isset(self::$instance[$decorator])) {
+            self::$instance[$decorator] = static::makeDirect($decorator);
         }
 
-        if (!isset(self::$instance[$fQCN])) {
-            self::$instance[$fQCN] = static::make($fQCN);
-        }
-
-        return self::$instance[$fQCN];
+        return self::$instance[$decorator];
     }
 
     public static function make(string $fQCN): object
     {
-        if (isset(self::$decorator[$fQCN])) {
-            return static::make(self::$decorator[$fQCN]);
+        $decorator = static::resolveDecoratorChain($fQCN);
+
+        if (isset(self::$mock[$decorator])) {
+            return self::$mock[$decorator];
         }
 
-        if (isset(self::$mock[$fQCN])) {
-            return self::$mock[$fQCN];
-        }
+        static::checkTypeHint($fQCN, $decorator);
 
+        return static::makeDirect($decorator);
+    }
+
+    protected static function resolveDecoratorChain(string $fQCN): string
+    {
+        return isset(self::$decorator[$fQCN]) ? static::resolveDecoratorChain(self::$decorator[$fQCN]) : $fQCN;
+    }
+
+    /**
+     * @param string $typeHint
+     * @param string $decorator
+     * @throws InvalidArgumentException
+     */
+    protected static function checkTypeHint(string $typeHint, string $decorator)
+    {
+        if (self::isDecorated($typeHint) &&!is_subclass_of($decorator, $typeHint)) {
+            throw new InvalidArgumentException(sprintf('Decorator %s violates type hint %s,', $decorator, $typeHint));
+        }
+    }
+
+    /**
+     * @param string $fQCN
+     * @return mixed
+     * @throws MakeClassException
+     */
+    protected static function makeDirect(string $fQCN)
+    {
         try {
             return new $fQCN();
         } catch (Exception $e) {
@@ -58,7 +86,7 @@ abstract class DependencyResolver implements ResolverInterface
 
     public static function has(string $fQCN): bool
     {
-        return class_exists($fQCN);
+        return class_exists($fQCN) || interface_exists($fQCN);
     }
 
     public static function clearCache(string $fQCN=null): void
@@ -88,7 +116,7 @@ abstract class DependencyResolver implements ResolverInterface
 
     public static function getDecorator(string $fQCN): ?string
     {
-        return @self::$decorator[$fQCN];
+        return isset(self::$decorator[$fQCN]) ? self::$decorator[$fQCN] : null;
     }
 
     public static function tag(string $fQCN, string $name): void

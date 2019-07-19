@@ -11,6 +11,7 @@
 
 namespace eArc\DI\Interfaces;
 
+use eArc\DI\Exceptions\InvalidArgumentException;
 use eArc\DI\Exceptions\NotFoundException;
 
 /**
@@ -46,6 +47,8 @@ interface ParameterBagInterface
      * @param string $key   The parameter key.
      *
      * @param mixed  $value The parameter value.
+     *
+     * @throws InvalidArgumentException Key is used already.
      */
     public static function set(string $key, $value): void;
 

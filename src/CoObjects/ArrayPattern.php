@@ -11,6 +11,8 @@
 
 namespace eArc\DI\CoObjects;
 
+use eArc\DI\Exceptions\InvalidArgumentException;
+
 abstract class ArrayPattern
 {
     public static function has(array $keys, array $array): bool
@@ -44,11 +46,18 @@ abstract class ArrayPattern
         $key = array_shift($keys);
 
         if (empty($keys)) {
+            if (isset($array[$key])) {
+                throw new InvalidArgumentException();
+            }
             $array[$key] = $value;
+
+            return;
         }
 
-        if (!isset($array[$key]) || !is_array($array[$key])) {
+        if (!isset($array[$key])) {
             $array[$key] = [];
+        } else if (!is_array($array[$key])) {
+            throw new InvalidArgumentException();
         }
 
         self::set($keys, $value, $array[$key]);

@@ -11,7 +11,7 @@
 
 namespace eArc\DI {
 
-    use eArc\DI\CoObjects\DependencyResolver;
+    use eArc\DI\CoObjects\Resolver;
     use eArc\DI\CoObjects\ParameterBag;
     use eArc\DI\Exceptions\InvalidArgumentException;
     use BootstrapEArcDI;
@@ -24,7 +24,7 @@ namespace eArc\DI {
          *
          * @throws InvalidArgumentException
          */
-        public static function init(string $resolver=DependencyResolver::class, string $parameterBag=ParameterBag::class): void
+        public static function init(string $resolver=Resolver::class, string $parameterBag=ParameterBag::class): void
         {
             BootstrapEArcDI::init($resolver, $parameterBag);
         }
@@ -33,7 +33,7 @@ namespace eArc\DI {
 
 namespace {
 
-    use eArc\DI\CoObjects\DependencyResolver;
+    use eArc\DI\CoObjects\Resolver;
     use eArc\DI\Exceptions\InvalidArgumentException;
     use eArc\DI\CoObjects\ParameterBag;
     use eArc\DI\Interfaces\ParameterBagInterface;
@@ -63,7 +63,7 @@ namespace {
          *
          * @throws InvalidArgumentException
          */
-        public static function init(string $resolver=DependencyResolver::class, string $parameterBag=ParameterBag::class): void
+        public static function init(string $resolver=Resolver::class, string $parameterBag=ParameterBag::class): void
         {
             if (!is_subclass_of($resolver, ResolverInterface::class)) {
                 throw new InvalidArgumentException(sprintf('Resolver has to implement %s.', ResolverInterface::class));
@@ -78,10 +78,6 @@ namespace {
             self::$parameterBag = $parameterBag;
 
             if (!function_exists('di_get')) {
-                /**
-                 * @param string $fQCN
-                 * @return object
-                 */
                 function di_get(string $fQCN): object
                 {
                     return BootstrapEArcDI::getResolver()::get($fQCN);
@@ -89,21 +85,13 @@ namespace {
             }
 
             if (!function_exists('di_make')) {
-                /**
-                 * @param string $fQCN
-                 * @return object
-                 */
-                function di_make(string $fQCN): object
+                function di_make(string $fQCn): object
                 {
-                    return BootstrapEArcDI::getResolver()::make($fQCN);
+                    return BootstrapEArcDI::getResolver()::make($fQCn);
                 }
             }
 
             if (!function_exists('di_has')) {
-                /**
-                 * @param string $fQCN
-                 * @return bool
-                 */
                 function di_has(string $fQCN): bool
                 {
                     return BootstrapEArcDI::getResolver()::has($fQCN);
@@ -111,9 +99,6 @@ namespace {
             }
 
             if (!function_exists('di_clear_cache')) {
-                /**
-                 * @param string|null $fQCN
-                 */
                 function di_clear_cache(string $fQCN = null): void
                 {
                     BootstrapEArcDI::getResolver()::clearCache($fQCN);
@@ -121,10 +106,6 @@ namespace {
             }
 
             if (!function_exists('di_decorate')) {
-                /**
-                 * @param string $fQCN
-                 * @param string $fQCNReplacement
-                 */
                 function di_decorate(string $fQCN, string $fQCNReplacement): void
                 {
                     BootstrapEArcDI::getResolver()::decorate($fQCN, $fQCNReplacement);
@@ -132,10 +113,6 @@ namespace {
             }
 
             if (!function_exists('di_is_decorated')) {
-                /**
-                 * @param string $fQCN
-                 * @return bool
-                 */
                 function di_is_decorated(string $fQCN): bool
                 {
                     return BootstrapEArcDI::getResolver()::isDecorated($fQCN);
@@ -143,10 +120,6 @@ namespace {
             }
 
             if (!function_exists('di_get_decorator')) {
-                /**
-                 * @param string $fQCN
-                 * @return string
-                 */
                 function di_get_decorator(string $fQCN): string
                 {
                     return BootstrapEArcDI::getResolver()::getDecorator($fQCN);
@@ -154,10 +127,6 @@ namespace {
             }
 
             if (!function_exists('di_tag')) {
-                /**
-                 * @param string $fQCN
-                 * @param string $name
-                 */
                 function di_tag(string $fQCN, string $name): void
                 {
                     BootstrapEArcDI::getResolver()::tag($fQCN, $name);
@@ -165,10 +134,6 @@ namespace {
             }
 
             if (!function_exists('di_get_tagged')) {
-                /**
-                 * @param string $name
-                 * @return iterable
-                 */
                 function di_get_tagged(string $name): iterable
                 {
                     return BootstrapEArcDI::getResolver()::getTagged($name);
@@ -176,10 +141,6 @@ namespace {
             }
 
             if (!function_exists('di_clear_tags')) {
-                /**
-                 * @param string $name
-                 * @param string|null $fQCN
-                 */
                 function di_clear_tags(string $name, string $fQCN=null): void
                 {
                     BootstrapEArcDI::getResolver()::clearTags($name, $fQCN);
@@ -187,10 +148,6 @@ namespace {
             }
 
             if (!function_exists('di_mock')) {
-                /**
-                 * @param string $fQCN
-                 * @param object $mock
-                 */
                 function di_mock(string $fQCN, object $mock): void
                 {
                     BootstrapEArcDI::getResolver()::mock($fQCN, $mock);
@@ -198,9 +155,6 @@ namespace {
             }
 
             if (!function_exists('di_is_mocked')) {
-                /**
-                 * @param string $fQCN
-                 */
                 function di_is_mocked(string $fQCN): void
                 {
                     BootstrapEArcDI::getResolver()::isMocked($fQCN);
@@ -208,9 +162,6 @@ namespace {
             }
 
             if (!function_exists('di_clear_mock')) {
-                /**
-                 * @param string $fQCN
-                 */
                 function di_clear_mock(string $fQCN=null): void
                 {
                     BootstrapEArcDI::getResolver()::clearMock($fQCN);
@@ -218,10 +169,6 @@ namespace {
             }
 
             if (!function_exists('di_param')) {
-                /**
-                 * @param string $key
-                 * @return mixed
-                 */
                 function di_param(string $key)
                 {
                     return BootstrapEArcDI::getParameterBag()::get($key);
@@ -229,10 +176,6 @@ namespace {
             }
 
             if (!function_exists('di_set_param')) {
-                /**
-                 * @param string $key
-                 * @param $value
-                 */
                 function di_set_param(string $key, $value): void
                 {
                     BootstrapEArcDI::getParameterBag()::set($key, $value);
@@ -240,10 +183,6 @@ namespace {
             }
 
             if (!function_exists('di_has_param')) {
-                /**
-                 * @param string $key
-                 * @return bool
-                 */
                 function di_has_param(string $key): bool
                 {
                     return BootstrapEArcDI::getParameterBag()::has($key);
@@ -251,9 +190,6 @@ namespace {
             }
 
             if (!function_exists('di_import_param')) {
-                /**
-                 * @param array $additionalParameter
-                 */
                 function di_import_param(array $additionalParameter): void
                 {
                     BootstrapEArcDI::getParameterBag()::import($additionalParameter);

@@ -17,7 +17,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Hint: Define your services public to make this work.
  */
-class SymfonyResolver extends DependencyResolver
+class SymfonyResolver extends Resolver
 {
     /** @var ContainerInterface */
     protected static $container;
@@ -29,23 +29,23 @@ class SymfonyResolver extends DependencyResolver
 
     public static function get(string $fQCN): object
     {
-        if (isset(self::$decorator[$fQCN])) {
-            return static::get(self::$decorator[$fQCN]);
+        $decorator = static::resolveDecoratorChain($fQCN);
+
+        if (isset(self::$mock[$decorator])) {
+            return self::$mock[$decorator];
         }
 
-        if (isset(self::$mock[$fQCN])) {
-            return self::$mock[$fQCN];
+        static::checkTypeHint($fQCN, $decorator);
+
+        if (self::$container->has($decorator)) {
+            return self::$container->get($decorator);
         }
 
-        if (self::$container->has($fQCN)) {
-            return self::$container->get($fQCN);
+        if (!isset(self::$instance[$decorator])) {
+            self::$instance[$decorator] = static::makeDirect($decorator);
         }
 
-        if (!isset(self::$instance[$fQCN])) {
-            self::$instance[$fQCN] = static::make($fQCN);
-        }
-
-        return self::$instance[$fQCN];
+        return self::$instance[$decorator];
     }
 
     public static function has(string $fQCN): bool

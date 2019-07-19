@@ -11,6 +11,7 @@
 
 namespace eArc\DI\CoObjects;
 
+use eArc\DI\Exceptions\InvalidArgumentException;
 use eArc\DI\Exceptions\NotFoundException;
 use eArc\DI\Interfaces\ParameterBagInterface;
 
@@ -43,7 +44,11 @@ abstract class ParameterBag implements ParameterBagInterface
     public static function set(string $key, $value): void
     {
         if (strpos($key, '.')) {
-            ArrayPattern::set(explode('.', $key), $value, self::$parameter);
+            try {
+                ArrayPattern::set(explode('.', $key), $value, self::$parameter);
+            } catch (InvalidArgumentException $e) {
+                throw new InvalidArgumentException(sprintf('Parameter key %s is used already.', $key));
+            }
         } else {
             self::$parameter[$key] = $value;
         }
