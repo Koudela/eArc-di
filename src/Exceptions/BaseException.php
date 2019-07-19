@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * e-Arc Framework - the explicit Architecture Framework
  * dependency injection component
@@ -11,9 +11,11 @@
 
 namespace eArc\DI\Exceptions;
 
+use Exception;
+
 /**
- * Factory information supplied is insufficient or not usable.
+ * Generic dependency injection exception
  */
-class InvalidFactoryException extends DependencyContainerException
+class BaseException extends Exception
 {
 }

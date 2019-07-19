@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * e-Arc Framework - the explicit Architecture Framework
  * dependency injection component
@@ -12,9 +12,8 @@
 namespace eArc\DI\Exceptions;
 
 /**
- * The configuration for the objects the resolved object depends on depends on
- * the object itself.
+ * No class can be identified by the supplied fully qualified class name.
  */
-class CircularDependencyException extends DependencyContainerException
+class InvalidArgumentException extends BaseException
 {
 }

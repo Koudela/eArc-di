@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * e-Arc Framework - the explicit Architecture Framework
  * dependency injection component
@@ -12,8 +12,8 @@
 namespace eArc\DI\Exceptions;
 
 /**
- * The given configuration information is insufficient or not usable.
+ * No class can be identified by the supplied fully qualified class name.
  */
-class InvalidObjectConfigurationException extends DependencyContainerException
+class NotFoundException extends BaseException
 {
 }
