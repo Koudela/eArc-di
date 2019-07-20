@@ -26,7 +26,7 @@ which builds on the top of earc/di.
    - [architectural considerations](#architectural-considerations)
    - [integration with other di systems](#integration-with-other-di-systems)
  - [releases](#releases)
-   - [release v2.0 (alpha)](#release-v20-alpha)
+   - [release v2.0](#release-v20)
    - [release v1.0](#release-v10)
    - [release v0.1](#release-v01)
 
@@ -505,7 +505,7 @@ There is no limit. Create your own one to rule them all and make your live easy 
 
 ## releases
 
-### release v2.0 (alpha)
+### release v2.0
 
 * complete rewrite based on a new view on dependency injection
 
@@ -549,7 +549,3 @@ by `DependencyContainer::load(include ...)`.
 ### release v0.1
 
 the first official release
-
-#TODO
-
-- REWRITE TESTS
