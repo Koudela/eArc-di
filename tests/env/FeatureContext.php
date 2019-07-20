@@ -20,8 +20,14 @@ use eArc\DI\Exceptions\MakeClassException;
 use eArc\DI\Exceptions\NotFoundException;
 use Exception;
 
-require_once __DIR__ . '/../../vendor/phpunit/phpunit/src/Framework/Assert/Functions.php';
-require_once __DIR__ . '/../../vendor/autoload.php';
+$vendorDir = __DIR__.'/../../vendor';
+
+if (!is_dir($vendorDir)) {
+    $vendorDir = __DIR__.'/../../../..';
+}
+
+require_once $vendorDir.'/phpunit/phpunit/src/Framework/Assert/Functions.php';
+require_once $vendorDir.'/autoload.php';
 
 /**
  * Defines application features from the specific context.

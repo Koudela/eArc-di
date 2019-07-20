@@ -496,7 +496,8 @@ Register your class(es) by the `DI::init` method. Now the `di_*` functions
 follow the logic you have implemented.
 
 If the third party di-system uses a container then integration is a beginners task. 
-You can find a ready to use example for symfony in the bridge folder.
+You can find a ready to use example for symfony in the bridge folder. Don't forget 
+to switch your symfony service definitions to `public`.
 
 If you use symfony register the SymfonyDICompilerPass and you are ready go (or to 
 migrate step by step).    
