@@ -33,6 +33,7 @@ namespace eArc\DI {
 
 namespace {
 
+    use ___PHPSTORM_HELPERS\object;
     use eArc\DI\CoObjects\Resolver;
     use eArc\DI\Exceptions\InvalidArgumentException;
     use eArc\DI\CoObjects\ParameterBag;
@@ -91,6 +92,12 @@ namespace {
                 }
             }
 
+            if (!function_exists('di_static')) {
+                function di_static(string $fQCn): string
+                {
+                    return BootstrapEArcDI::getResolver()::resolve($fQCn);
+                }
+            }
             if (!function_exists('di_has')) {
                 function di_has(string $fQCN): bool
                 {

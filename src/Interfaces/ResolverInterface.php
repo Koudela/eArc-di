@@ -57,6 +57,16 @@ interface ResolverInterface
     public static function make(string $fQCN): object;
 
     /**
+     * Returns the decorator class name or if the class/interface passed as argument
+     * is not decorated it returns the class/interface itself
+     *
+     * @param string $fQCN The fully qualified class name.
+     *
+     * @return string
+     */
+    public static function resolve(string $fQCN): string;
+
+    /**
      * Returns true if the resolver can return a class object for the given identifier.
      * Returns false otherwise.
      *

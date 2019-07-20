@@ -25,7 +25,7 @@ abstract class Resolver implements ResolverInterface
 
     public static function get(string $fQCN): object
     {
-        $decorator = static::resolveDecoratorChain($fQCN);
+        $decorator = static::resolve($fQCN);
 
         if (isset(self::$mock[$decorator])) {
             return self::$mock[$decorator];
@@ -42,7 +42,7 @@ abstract class Resolver implements ResolverInterface
 
     public static function make(string $fQCN): object
     {
-        $decorator = static::resolveDecoratorChain($fQCN);
+        $decorator = static::resolve($fQCN);
 
         if (isset(self::$mock[$decorator])) {
             return self::$mock[$decorator];
@@ -51,11 +51,6 @@ abstract class Resolver implements ResolverInterface
         static::checkTypeHint($fQCN, $decorator);
 
         return static::makeDirect($decorator);
-    }
-
-    protected static function resolveDecoratorChain(string $fQCN): string
-    {
-        return isset(self::$decorator[$fQCN]) ? static::resolveDecoratorChain(self::$decorator[$fQCN]) : $fQCN;
     }
 
     /**
@@ -82,6 +77,11 @@ abstract class Resolver implements ResolverInterface
         } catch (Exception $e) {
             throw new MakeClassException($e->getMessage(), $e->getCode(), $e);
         }
+    }
+
+    public static function resolve(string $fQCN): string
+    {
+        return isset(self::$decorator[$fQCN]) ? static::resolve(self::$decorator[$fQCN]) : $fQCN;
     }
 
     public static function has(string $fQCN): bool

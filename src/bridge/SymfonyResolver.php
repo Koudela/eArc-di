@@ -29,7 +29,7 @@ class SymfonyResolver extends Resolver
 
     public static function get(string $fQCN): object
     {
-        $decorator = static::resolveDecoratorChain($fQCN);
+        $decorator = static::resolve($fQCN);
 
         if (isset(self::$mock[$decorator])) {
             return self::$mock[$decorator];

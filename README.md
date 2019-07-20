@@ -49,6 +49,7 @@ which builds on the top of earc/di.
 - **architectural optimized code** - no pre building or pre compiling needed
 - **support for all standard dependency enrichment techniques** - decoration, mocking, 
  tagging
+- **decoration of static method access** - finally you are able to mock static methods  
 - **support for explicit programming/architecture** - a class has hold of all its 
  implementation details (apart from decoration, mocking and parameters which are by 
  their very nature foreign context driven)
@@ -278,6 +279,19 @@ get_class(di_make(ServiceContainingAnError::class)); // equals ServiceDecorator:
 Everywhere the error-prone service was injected now the class with the fix demands 
 its place.
 
+earc/di enables you to decorate classes that have static methods.
+
+```php
+$staticService = di_static(StaticService::class)
+$staticService::staticMethod(); // calls StaticService::staticMethod()
+
+di_decorate(StaticService::class, StaticServiceDecorator::class);
+
+$staticService = di_static(StaticService::class)
+$staticService::staticMethod(); // calls StaticServiceDecorator::staticMethod()
+```
+
+
 For debugging purpose `di_is_decorated` and `di_get_decorator` are handy functions.
 But be aware that it debugs the *current* decoration, not the result of a decorator
 chain.
@@ -316,6 +330,16 @@ Assert::assertSame($mockedService, di_get(Service::class)); // passes
 Assert::assertSame($mockedService, di_make(Service::class)); // passes
 Assert::assertSame($getObj, di_get(Service::class)); // fails 
 Assert::assertSame($makeObj, di_make(Service::class)); // fails
+```
+
+Keep in mind: Static accessed methods can be mocked via decoration only.
+
+```php
+di_static(StaticService::class)::staticMethod(); // calls StaticService::staticMethod()
+
+di_decorate(StaticService::class, StaticMock::class);
+
+di_static(StaticService::class)::staticMethod(); // calls StaticMock::staticMethod()
 ```
 
 You can check if an service is mocked by `di_is_mocked`.
