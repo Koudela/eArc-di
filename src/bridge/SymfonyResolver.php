@@ -10,14 +10,15 @@
  */
 
 
-namespace eArc\DI\CoObjects;
+namespace eArc\DI\bridge;
 
+use eArc\DI\CoObjects\Resolver;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Hint: Define your services public to make this work.
  */
-class SymfonyResolver extends Resolver
+abstract class SymfonyResolver extends Resolver
 {
     /** @var ContainerInterface */
     protected static $container;

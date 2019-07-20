@@ -11,7 +11,6 @@
 
 namespace eArc\DI\bridge;
 
-use eArc\DI\CoObjects\SymfonyResolver;
 use eArc\DI\DI;
 use eArc\DI\Exceptions\InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;

@@ -12,15 +12,13 @@
 namespace eArc\DITests\env;
 
 use Behat\Behat\Context\Context;
-use eArc\Container\Exceptions\ItemNotFoundException;
-use eArc\DI\DependencyContainer;
-use eArc\DI\DependencyResolver;
-use eArc\DI\Exceptions\CircularDependencyException;
-use eArc\DI\Exceptions\InvalidFactoryException;
-use eArc\DI\Exceptions\InvalidObjectConfigurationException;
-use eArc\DI\Interfaces\Flags;
-use eArc\DI\Support\ContainerCollection;
-use Psr\Container\NotFoundExceptionInterface;
+use eArc\DI\CoObjects\ParameterBag;
+use eArc\DI\CoObjects\Resolver;
+use eArc\DI\DI;
+use eArc\DI\Exceptions\InvalidArgumentException;
+use eArc\DI\Exceptions\MakeClassException;
+use eArc\DI\Exceptions\NotFoundException;
+use Exception;
 
 require_once __DIR__ . '/../../vendor/phpunit/phpunit/src/Framework/Assert/Functions.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
@@ -31,25 +29,6 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 class FeatureContext implements Context
 {
     const CLASS_NAMESPACE = 'eArc\\DITests\\env\\';
-
-    /** @var mixed|null */
-    static protected $returnFromCallableStatic;
-
-    /** @var mixed|null */
-    protected $returnFromCallable;
-
-    /** @var DependencyContainer */
-    protected $dic;
-
-    /** @var DependencyResolver */
-    protected $depRes;
-
-    /** @var ContainerCollection */
-    protected $containerCollection;
-
-    /** @var Callable[] */
-    protected $callableCollection = [];
-
 
     /**
      * @param string $str
@@ -71,10 +50,6 @@ class FeatureContext implements Context
      * @param string $str
      *
      * @return bool|float|int|string|null
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidObjectConfigurationException
-     * @throws ItemNotFoundException
      */
     protected function castString(string $type, string $str)
     {
@@ -92,12 +67,6 @@ class FeatureContext implements Context
                 return $objects[$str];
             /** @noinspection PhpMissingBreakStatementInspection */
             case 'class':
-                if ($this->dic->has(self::CLASS_NAMESPACE . $str)) {
-                    return $this->dic->get(self::CLASS_NAMESPACE . $str);
-                }
-                if ($this->containerCollection->has(self::CLASS_NAMESPACE . $str)) {
-                    return $this->containerCollection->get(self::CLASS_NAMESPACE . $str);
-                }
             case 'string':
             default: return $str;
         }
@@ -106,754 +75,402 @@ class FeatureContext implements Context
     /**
      * @Given earc-di is bootstrapped
      *
-     * @throws CircularDependencyException
-     * @throws InvalidObjectConfigurationException
-     * @throws InvalidFactoryException
+     * @throws InvalidArgumentException
      */
     public function earcDiIsBootstrapped()
     {
-        $this->depRes = new DependencyResolver();
-        $this->dic = new DependencyContainer($this->depRes);
-    }
-
-    /**
-     * @Given /^a second earc-di container is bootstrapped$/
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
-     */
-    public function aSecondEarcDiIsBootstrapped()
-    {
-        $this->containerCollection = new ContainerCollection();
-        $this->containerCollection->merge($this->dic);
-        $this->dic = new DependencyContainer(
-            new DependencyResolver([], null, $this->containerCollection)
-        );
-    }
-
-    /**
-     * @Given /^the earc-di container is merged into a new one$/
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
-     */
-    public function theEarcDiContainerIsMergedIntoANewOne()
-    {
-        $dic = new DependencyContainer();
-        $dic->merge($this->dic);
-        $this->dic = $dic;
-    }
-
-    /**
-     * @Then /^has (.*) returns (.*)$/
-     *
-     * @param string $name
-     * @param string $return
-     */
-    public function hasReturns(string $name, string $return)
-    {
-        assertSame($this->transformString($return), $this->dic->has($name));
-    }
-
-    /**
-     * @Then get :name throws NotFoundExceptionInterface
-     *
-     * @param string $name
-     */
-    public function getThrowsNotFoundExceptionInterface(string $name)
-    {
-        $assertion = false;
-
-        try {
-            $this->dic->get($name);
-        } catch (\Exception $exception) {
-            $assertion = is_subclass_of($exception, NotFoundExceptionInterface::class);
+        switch (rand(0, 2)) {
+            case 0:
+                DI::init(Resolver::class, ParameterBag::class);
+                break;
+            case 1:
+                DI::init();
+                break;
+            case 2:
+                DI::init(Resolver::class);
+                break;
         }
-
-        assertTrue($assertion);
+        di_clear_cache();
+        di_clear_mock();
+        di_decorate(SomeInterface::class, SomeInterface::class);
+        di_decorate(SomeClass::class, SomeClass::class);
+        di_decorate(SomeOtherClass::class, SomeOtherClass::class);
     }
 
     /**
-     * @Then /^get class (.*) throws NotFoundExceptionInterface$/
+     * @Given /^class (.*) does not exist$/
      *
      * @param string $className
      */
-    public function getClassThrowsNotFoundExceptionInterface(string $className)
+    public function classDoesNotExist(string $className)
     {
-        $assertion = false;
-
-        try {
-            $this->dic->get(self::CLASS_NAMESPACE . $className);
-        } catch (\Exception $exception) {
-            $assertion = is_subclass_of($exception, NotFoundExceptionInterface::class);
-        }
-
-        assertTrue($assertion);
+        assertNotTrue(class_exists(self::CLASS_NAMESPACE.$className));
     }
 
     /**
-     * @Given /^set (.*) item (.*) as (.*)$/
+     * @Given /^class (.*) does exist$/
      *
-     * @param string $type
-     * @param string $name
+     * @param string $className
+     */
+    public function classDoesExist(string $className)
+    {
+        assertTrue(class_exists(self::CLASS_NAMESPACE.$className));
+    }
+
+    /**
+     * @Given /^di_has with parameter (.*) returns (.*)$/
+     *
+     * @param string $className
      * @param string $value
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
-     * @throws ItemNotFoundException
      */
-    public function setItemAs(string $type, string $name, string $value)
+    public function diHasWithParameterReturns(string $className, string $value)
     {
-        $this->dic->set($name, $this->castString($type, $value));
+        assertSame($this->transformString($value), class_exists(self::CLASS_NAMESPACE.$className));
     }
 
     /**
-     * @Then /^get (.*) returns ([a-zA-Z0-9.\\_]+)+ ([a-zA-Z0-9.\\_]+)$/
+     * @Then /^di_is_decorated with parameter (.*) returns (.*)$/
      *
-     * @param string $name
-     * @param string $type
+     * @param string $className
      * @param string $value
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidObjectConfigurationException
-     * @throws ItemNotFoundException
      */
-    public function getReturns(string $name, string $type, string $value)
+    public function diIsDecoratedWithParameterReturns(string $className, string $value)
     {
-        if ($type === 'class') {
-            assertInstanceOf(self::CLASS_NAMESPACE . $value, $this->dic->get($name));
-            return;
-        }
-        assertSame($this->castString($type, $value), $this->dic->get($name));
+        assertSame($this->transformString($value), di_is_decorated(self::CLASS_NAMESPACE.$className));
     }
 
     /**
-     * @Given /^there exists a function callable named (.*) returning (.*)$/
-     *
-     * @param string $name
-     * @param string $return
-     */
-    public function thereExistsAFunctionCallableNamedReturning(string $name, string $return)
-    {
-        global $basicFunctionCallableReturn;
-
-        $basicFunctionCallableReturn = $return;
-
-        if (!function_exists(self::CLASS_NAMESPACE . 'basicFunctionCallable'))
-        {
-            function basicFunctionCallable()
-            {
-                global $basicFunctionCallableReturn;
-
-                return $basicFunctionCallableReturn;
-            }
-        }
-        $this->callableCollection[$name] = self::CLASS_NAMESPACE . 'basicFunctionCallable';
-    }
-
-    /**
-     * @Given /^there exists a closure callable named (.*) returning (.*)$/
-     *
-     * @param string $name
-     * @param string $return
-     */
-    public function thereExistsAClosureCallableNamedReturning(string $name, string $return)
-    {
-        $this->callableCollection[$name] = function() use ($return) {
-            return $return;
-        };
-    }
-
-    static public function callableStatic() {
-        return self::$returnFromCallableStatic;
-    }
-
-    /**
-     * @Given /^there exists a static callable named (.*) returning (.*)$/
-     *
-     * @param string $name
-     * @param string $return
-     */
-    public function thereExistsAStaticCallableNamedReturning(string $name, string $return)
-    {
-        self::$returnFromCallableStatic = $return;
-        $this->callableCollection[$name] = [FeatureContext::class, 'callableStatic'];
-    }
-
-    public function callableFromObject() {
-        return $this->returnFromCallable;
-    }
-
-    /**
-     * @Given /^there exists a object callable named (.*) returning (.*)$/
-     *
-     * @param string $name
-     * @param string $return
-     */
-    public function thereExistsAObjectCallableNamedReturning(string $name, string $return)
-    {
-        $this->returnFromCallable = $return;
-        $this->callableCollection[$name] = [$this, 'callableFromObject'];
-    }
-
-    /**
-     * @Given /^(.*) is set with callable (.*)$/
-     *
-     * @param string $containerKey
-     * @param string $callableName
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
-     */
-    public function isSetWithCallable(string $containerKey, string $callableName)
-    {
-        $this->dic->set($containerKey, $this->callableCollection[$callableName]);
-    }
-
-    /**
-     * @Given /^(.*) depends on (.*)$/
-     *
-     * @param string $class1
-     * @param string $class2
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
-     */
-    public function dependsOn(string $class1, string $class2)
-    {
-        $this->dic->set(self::CLASS_NAMESPACE . $class1, [self::CLASS_NAMESPACE . $class2]);
-    }
-
-    /**
-     * @Then /^get (.*) throws a CircularDependencyException$/
-     *
-     * @param string $name
-     *
-     * @throws InvalidObjectConfigurationException
-     */
-    public function GetThrowsACircularDependencyException(string $name)
-    {
-        $isThrown = false;
-
-        try {
-            $this->dic->get(self::CLASS_NAMESPACE . $name);
-        } catch (CircularDependencyException $exception) {
-            $isThrown = true;
-        }
-
-        assertTrue($isThrown);
-    }
-
-    /**
-     * @Then /^make (.*) throws a CircularDependencyException$/
-     *
-     * @param string $name
-     *
-     * @throws InvalidObjectConfigurationException
-     * @throws ItemNotFoundException
-     */
-    public function MakeThrowsACircularDependencyException(string $name)
-    {
-        $isThrown = false;
-
-        try {
-            $this->dic->make(self::CLASS_NAMESPACE . $name);
-        } catch (CircularDependencyException $exception) {
-            $isThrown = true;
-        }
-
-        assertTrue($isThrown);
-    }
-
-    /**
-     * @Then /^make (.*) throws an InvalidObjectConfigurationException$/
-     *
-     * @param string $name
-     *
-     * @throws CircularDependencyException
-     * @throws ItemNotFoundException
-     */
-    public function makeThrowsAnInvalidObjectConfigurationException(string $name)
-    {
-        $isThrown = false;
-
-        try {
-            $this->dic->make(self::CLASS_NAMESPACE . $name);
-        } catch (InvalidObjectConfigurationException $exception) {
-            $isThrown = true;
-        }
-
-        assertTrue($isThrown);
-    }
-
-    /**
-     * @Given /^class (.*) is configured without parameter and dependencies$/
+     * @Then /^di_get_decorator with parameter (.*) returns (.*)$/
      *
      * @param string $className
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
+     * @param string $value
      */
-    public function classIsConfiguredWithoutParameterAndDependencies(string $className)
+    public function diGetDecoratorWithParameterReturns(string $className, string $value)
     {
-        $this->dic->set(self::CLASS_NAMESPACE . $className, []);
+        $value = $this->transformString($value);
+
+        assertSame(
+            is_string($value) ? self::CLASS_NAMESPACE.$value : $value,
+            di_get_decorator(self::CLASS_NAMESPACE.$className)
+        );
+    }
+
+
+    /**
+     * @Given /^di_decorate is called with parameter (.*) and (.*)$/
+     *
+     * @param string $className1
+     * @param string $className2
+     */
+    public function diDecorateIsCalledWithParameterAnd(string $className1, string $className2)
+    {
+        di_decorate(self::CLASS_NAMESPACE.$className1, self::CLASS_NAMESPACE.$className2);
     }
 
     /**
-     * @Then /^get class (.*) returns an object of type ([a-zA-Z0-9.\\_]+)$/
+     * @Then /^di_static with parameter (.*) returns (.*)$/
      *
-     * @param string $classKey
      * @param string $className
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidObjectConfigurationException
+     * @param string $value
      */
-    public function getReturnsAnObjectOfType(string $classKey, string $className)
+    public function diStaticWithParameterReturns(string $className, string $value)
     {
-        assertInstanceOf(
-            1 === preg_match('/^.*[\\\\].*$/', $className) ? $className : self::CLASS_NAMESPACE . $className,
-            $this->dic->get(self::CLASS_NAMESPACE .$classKey)
+        assertSame(self::CLASS_NAMESPACE.$value, di_static(self::CLASS_NAMESPACE.$className));
+    }
+
+    /**
+     * @Given /^di_clear_tags with parameter (.*) and (.*) is called$/
+     *
+     * @param string $tagName
+     * @param string $className
+     */
+    public function diClearTagsWithParameterIsCalled(string $tagName, string $className)
+    {
+        $className = $this->transformString($className);
+
+        di_clear_tags(
+            $tagName,
+            is_string($className) ? self::CLASS_NAMESPACE.$className : $className
         );
     }
 
     /**
-     * @Then /^make class (.*) returns an object of type ([a-zA-Z0-9.\\_]+)$/
+     * @Then /^di_get_tagged with parameter (.*) returns \[(.*)\]$/
      *
-     * @param string $classKey
-     * @param string $className
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidObjectConfigurationException
-     * @throws ItemNotFoundException
+     * @param string $tagName
+     * @param string $array
      */
-    public function makeReturnsAnObjectOfType(string $classKey, string $className)
+    public function diGetTaggedWithParameterReturns(string $tagName, string $array)
     {
-        assertInstanceOf(
-            1 === preg_match('/^.*[\\\\].*$/', $className) ? $className : self::CLASS_NAMESPACE . $className,
-            $this->dic->make(self::CLASS_NAMESPACE .$classKey)
+        $array = '' !== $array ? explode(',', $array) : [];
+        $cnt = 0;
+        foreach (di_get_tagged($tagName) as $value) {
+            assertSame($value, self::CLASS_NAMESPACE.trim($array[$cnt++]));
+        }
+
+        assertSame($cnt, count($array));
+    }
+
+    /**
+     * @Given /^di_tag with parameter (.*) and (.*) is called$/
+     *
+     * @param string $className
+     * @param string $tagName
+     */
+    public function diTagWithParameterAndIsCalled(string $className, string $tagName)
+    {
+        di_tag(self::CLASS_NAMESPACE.$className, $tagName);
+    }
+
+    /**
+     * @Then /^di_is_mocked with parameter (.*) returns (.*)$/
+     *
+     * @param string $className
+     * @param string $value
+     */
+    public function diIsMockedWithParameterReturns(string $className, string $value)
+    {
+        assertSame($this->transformString($value), di_is_mocked(self::CLASS_NAMESPACE.$className));
+    }
+
+    /**
+     * @Then /^di_get with parameter (.*) returns (.*) object$/
+     *
+     * @param string $className
+     * @param string $objectClassName
+     */
+    public function diGetWithParameterReturns(string $className, string $objectClassName)
+    {
+        assertSame(
+            self::CLASS_NAMESPACE.$objectClassName,
+            get_class(di_get(self::CLASS_NAMESPACE.$className))
         );
     }
 
     /**
-     * @Then /^get class (.*) returns an object configured without parameter and dependencies$/
+     * @Then /^di_make with parameter (.*) returns (.*) object$/
      *
-     * @param string $classKey
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidObjectConfigurationException
+     * @param string $className
+     * @param string $objectClassName
      */
-    public function getClassReturnsAnObjectConfiguredWithoutParameterAndDependencies(string $classKey)
+    public function diMakeWithParameterReturns(string $className, string $objectClassName)
     {
-        assertSame([], $this->dic->get(self::CLASS_NAMESPACE . $classKey)->getInitialArguments());
+        assertSame(
+            self::CLASS_NAMESPACE.$objectClassName,
+            get_class(di_make(self::CLASS_NAMESPACE.$className))
+        );
     }
 
     /**
-     * @Given /^class (.*) is configured by (.*)$/
+     * @Given /^di_mock with parameter (.*) and new (.*) is called$/
      *
      * @param string $className
-     * @param string $config
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
+     * @param string $objectClassName
      */
-    public function classIsConfiguredBy(string $className, string $config)
+    public function diMockWithParameterIsCalled(string $className, string $objectClassName)
     {
-        $conf = '';
-        eval('$conf = ' . $config . ';');
-        $this->dic->set(self::CLASS_NAMESPACE . $className, $conf);
+        $mock = self::CLASS_NAMESPACE.$objectClassName;
+        di_mock(self::CLASS_NAMESPACE.$className, new $mock);
     }
 
     /**
-     * @Then /^get class (.*) returns an object configured with \[(.*)\]$/
+     * @Given /^di_clear_mock with parameter (.*) is called$/
      *
      * @param string $className
-     * @param string $config
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidObjectConfigurationException
-     * @throws ItemNotFoundException
      */
-    public function getClassReturnsAnObjectConfiguredWith(string $className, string $config)
+    public function diClearMockWithParameterIsCalled(string $className)
     {
-        $arr = explode(',', $config);
-        $config = [];
-        foreach ($arr as $part) {
-            $parts = explode(' ',$part);
-            $config[] = $this->castString($parts[0], $parts[1]);
+        $className = $this->transformString($className);
+
+        di_clear_mock(is_string($className) ? self::CLASS_NAMESPACE.$className : $className);
+    }
+
+    /**
+     * @Then /^di_param with parameter (.*) throws NotFoundException$/
+     *
+     * @param string $key
+     */
+    public function diParamWithParameterThrowsNotFoundException(string $key)
+    {
+        try {
+            di_param($key);
+            assertSame(true, false);
+        } catch (Exception $e) {
+            assertSame(NotFoundException::class, get_class($e));
         }
-
-        assertSame($config, $this->dic->get(self::CLASS_NAMESPACE . $className)->getInitialArguments());
     }
 
     /**
-     * @Then /^get class (.*) returns obj configured with obj configured with obj of class (.*)$/
+     * @Then /^di_has_param with parameter (.*) returns (.*)$/
      *
-     * @param string $classNameKey
-     * @param string $classNameEndOfChain
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidObjectConfigurationException
+     * @param string $key
+     * @param string $value
      */
-    public function getClassReturnsObjConfiguredWithObjConfiguredWithObjOfClass(string $classNameKey, string $classNameEndOfChain)
+    public function diHasParamWithParameterReturns(string $key, string $value)
     {
-        /** @noinspection PhpUndefinedMethodInspection */
-        $obj = $this->dic->get(self::CLASS_NAMESPACE . $classNameKey)->getInitialArguments()[0]->getInitialArguments()[0];
-        assertInstanceOf(self::CLASS_NAMESPACE . $classNameEndOfChain, $obj);
+        assertSame($this->transformString($value), di_has_param($key));
     }
 
     /**
-     * @Then /^get class (.*) returns an array with \[(.*)\]$/
+     * @Given /^di_set_param with parameter (.*) and (.*) is called$/
      *
-     * @param string $className
-     * @param string $config
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidObjectConfigurationException
-     * @throws ItemNotFoundException
+     * @param string $key
+     * @param string $value
      */
-    public function getClassReturnsAnArrayWith(string $className, string $config)
+    public function diSetParamWithParameterAndIsCalled(string $key, string $value)
     {
-        $arr = explode(',', $config);
-        $config = [];
-        foreach ($arr as $part) {
-            $parts = explode(' ',$part);
-            $config[] = $this->castString($parts[0], $parts[1]);
+        di_set_param($key, $this->transformString($value));
+    }
+
+    /**
+     * @Then /^di_param with parameter (.*) returns (.*)$/
+     *
+     * @param string $key
+     * @param string $value
+     */
+    public function diParamWithParameterReturns(string $key, string $value)
+    {
+        assertSame($this->transformString($value), di_param($key));
+    }
+
+    /**
+     * @Given /^di_set_param with parameter (.*) and (.*) throws an InvalidArgumentException$/
+     *
+     * @param string $key
+     * @param string $value
+     */
+    public function diSetParamWithParameterAndThrowsAnInvalidArgumentException(string $key, string $value)
+    {
+        try {
+            di_set_param($key, $this->transformString($value));
+            assertSame(true, false);
+        } catch (Exception $e) {
+            assertSame(InvalidArgumentException::class, get_class($e));
         }
-
-        assertSame($config, $this->dic->get(self::CLASS_NAMESPACE . $className));
     }
 
     /**
-     * @Then /^CountInstantiations is instantiated ([0-9]+) times$/
-     *
-     * @param string $times
+     * @Given /^di_import_param with plain parameter is called$/
      */
-    public function countInstantiationsIsInstantiatedTimes(string $times)
+    public function diImportParamWithPlainParameterAndIsCalled()
     {
-        assertSame(CountInstantiations::$count, intval($times));
+        di_import_param(['plain_parameter' => 'My name is bunny. I do not know a thing.']);
     }
 
     /**
-     * @Given /^CountInstantiations has been reset$/
+     * @Given /^di_import_param with nested parameter is called$/
      */
-    public function countInstantiationsHasBeenReset()
+    public function diImportParamWithNestedParameterAndIsCalled()
     {
-        CountInstantiations::$count = 0;
+        di_import_param(['this' => ['parameter' => ['is' => 'nested']]]);
     }
 
     /**
-     * @Given /^class (.*) is configured with (.*) and flag FACTORY with a function callable$/
+     * @Then /^di_get with parameter (.*) throws MakeClassException$/
      *
      * @param string $className
-     * @param string $config
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
      */
-    public function classIsConfiguredWithFlagFACTORYAndAFunctionCallable(string $className, string $config)
+    public function diGetWithParameterThrowsMakeClassException(string $className)
     {
-        if (!function_exists(self::CLASS_NAMESPACE . 'someFunctionCallable')) {
-            function someFunctionCallable(...$args)
-            {
-                return new BasicClass(...$args);
-            }
+        try {
+            di_get(self::CLASS_NAMESPACE.$className);
+            assertSame(true, false);
+        } catch (Exception $e) {
+            assertSame(MakeClassException::class, get_class($e));
         }
-
-        $conf = [];
-        eval('$conf = ' . $config . ';');
-        $conf[Flags::class] =  [
-            Flags::FACTORY => self::CLASS_NAMESPACE . 'someFunctionCallable'
-        ];
-
-        var_dump(is_callable(self::CLASS_NAMESPACE . 'someFunctionCallable'));
-        $this->dic->set(self::CLASS_NAMESPACE . $className, $conf);
     }
 
     /**
-     * @Given /^class (.*) is configured with (.*) and flag FACTORY with a closure callable$/
+     * @Then /^di_make with parameter (.*) throws MakeClassException$/
      *
      * @param string $className
-     * @param string $config
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
      */
-    public function classIsConfiguredWithFlagFACTORYAndAClosureCallable(string $className, string $config)
+    public function diMakeWithParameterThrowsMakeClassException(string $className)
     {
-        $conf = [];
-        eval('$conf = ' . $config . ';');
-        $conf[Flags::class] =  [
-            Flags::FACTORY => function(...$args) {return new BasicClass(...$args);}
-        ];
-
-        $this->dic->set(self::CLASS_NAMESPACE . $className, $conf);
+        try {
+            di_make(self::CLASS_NAMESPACE.$className);
+            assertSame(true, false);
+        } catch (Exception $e) {
+            assertSame(MakeClassException::class, get_class($e));
+        }
     }
 
     /**
-     * @Given /^class (.*) is configured with (.*) and flag FACTORY with a static callable$/
+     * @Then /^successive di_make (.*) calls result in different objects$/
      *
      * @param string $className
-     * @param string $config
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
      */
-    public function classIsConfiguredWithFlagFACTORYAndAStaticCallable(string $className, string $config)
+    public function successiveDiMakeCallsResultInDifferentObjects(string $className)
     {
-        $conf = [];
-        eval('$conf = ' . $config . ';');
-        $conf[Flags::class] =  [
-            Flags::FACTORY => [FeatureContext::class, 'someStaticCallable']
-        ];
+        $class = self::CLASS_NAMESPACE.$className;
 
-        $this->dic->set(self::CLASS_NAMESPACE . $className, $conf);
+        assertNotSame(di_make($class), di_make($class));
     }
 
     /**
-     * @param mixed ...$args
-     *
-     * @return BasicClass
-     */
-    public static function someStaticCallable(...$args)
-    {
-        return new BasicClass(...$args);
-    }
-
-    /**
-     * @Given /^class (.*) is configured with (.*) and flag FACTORY with a object callable$/
+     * @Then /^successive di_get (.*) calls result in different objects after di_clear_cache only$/
      *
      * @param string $className
-     * @param string $config
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
      */
-    public function classIsConfiguredWithFlagFACTORYAndAObjectCallable(string $className, string $config)
+    public function successiveDiGetCallsResultInDifferentObjectsAfterDiClearCacheOnly(string $className)
     {
-        $conf = [];
-        eval('$conf = ' . $config . ';');
-        $conf[Flags::class] =  [
-            Flags::FACTORY => [$this, 'someObjectCallable']
-        ];
+        $class = self::CLASS_NAMESPACE.$className;
 
-        $this->dic->set(self::CLASS_NAMESPACE . $className, $conf);
+        assertSame(di_get($class), di_get($class));
+
+        $obj1 = di_get($class);
+        di_clear_cache($class);
+        $obj2 = di_get($class);
+
+        assertNotSame($obj1, $obj2);
+
+        $obj1 = di_get($class);
+        di_clear_cache(null);
+        $obj2 = di_get($class);
+
+        assertNotSame($obj1, $obj2);
     }
 
     /**
-     * @param mixed ...$args
+     * @Then /^(.*) implements ([not ]*)(.*)$/
      *
-     * @return BasicClass
+     * @param string $className
+     * @param string $not
+     * @param string $interfaceName
      */
-    public function someObjectCallable(...$args)
+    public function implementsOrNotThe(string $className, string $not, string $interfaceName)
     {
-        return new BasicClass(...$args);
+        $is = is_subclass_of(self::CLASS_NAMESPACE.$className, self::CLASS_NAMESPACE.$interfaceName);
+        assertTrue(($not !== '') ? !$is : $is);
     }
 
     /**
-     * @Then dependencies are accessible from beneath
+     * @Then /^di_get with parameter (.*) throws InvalidArgumentException/
      *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
+     * @param string $className
      */
-    public function dependenciesAreAccessibleFromBeneath()
+    public function diGetWithParameterThrowsInvalidArgumentException(string $className)
     {
-        $this->dic->load([
-            'param1' => 42,
-            BasicClass::class => [],
-            SomeClass::class => [
-                'param2' => 23,
-                SomeOtherClass::class => [
-                    SomeClass::class => [
-                        BasicClass::class,
-                        'param1',
-                        'param2'
-                    ]
-                ]
-            ]
-        ]);
-
-        $this->getReturnsAnObjectOfType('SomeClass', SomeClass::class);
-        /** @var SomeClass $class */
-        $class = $this->dic->get(SomeClass::class);
-        $args = $class->getInitialArguments();
-        assertSame(23, $args[0]);
-        assertInstanceOf(SomeOtherClass::class, $args[1]);
-        $class = $args[1];
-        $args = $class->getInitialArguments();
-        assertInstanceOf(SomeClass::class, $args[0]);
-        $class = $args[0];
-        $args = $class->getInitialArguments();
-        assertInstanceOf(BasicClass::class, $args[0]);
-        assertSame(42, $args[1]);
-        assertSame(23, $args[2]);
+        try {
+            di_get(self::CLASS_NAMESPACE.$className);
+            assertSame(true, false);
+        } catch (Exception $e) {
+            assertSame(InvalidArgumentException::class, get_class($e));
+        }
     }
 
     /**
-     * @Then dependencies are accessible from beside
+     * @Then /^di_make with parameter (.*) throws InvalidArgumentException/
      *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
+     * @param string $className
      */
-    public function dependenciesAreAccessibleFromBeside()
+    public function diMakeWithParameterThrowsInvalidArgumentException(string $className)
     {
-        $this->dic->load([
-            SomeClass::class => [
-                'param2' => 23,
-                SomeOtherClass::class => [
-                    'param1',
-                    'param2',
-                    BasicClass::class
-                ],
-                BasicClass::class => [
-                    'param1'
-                ],
-                'param1' => 42,
-            ]
-        ]);
-
-        $this->getReturnsAnObjectOfType('SomeClass', SomeClass::class);
-        /** @var SomeClass $class */
-        $class = $this->dic->get(SomeClass::class);
-        $args = $class->getInitialArguments();
-        assertSame( 23, $args[0]);
-        assertInstanceOf(SomeOtherClass::class, $args[1]);
-        assertInstanceOf(BasicClass::class, $args[2]);
-        assertSame(42, $args[3]);
-        $class = $args[1];
-        $args = $class->getInitialArguments();
-        assertSame(42, $args[0]);
-        assertSame( 23, $args[1]);
-        assertInstanceOf(BasicClass::class, $args[2]);
-        $class = $args[2];
-        $args = $class->getInitialArguments();
-        assertSame(42, $args[0]);
-    }
-
-    /**
-     * @Then dependencies are not accessible from above
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
-     */
-
-    public function dependenciesAreNotAccessibleFromAbove()
-    {
-        $this->dic->load([
-            'param1' => 42,
-            SomeClass::class => [
-                'param2',
-                BasicClass::class,
-                SomeOtherClass::class => [
-                    BasicClass::class => [11],
-                    'param1',
-                    'param2' => 23
-                ]
-            ]
-        ]);
-
-        $this->getReturnsAnObjectOfType('SomeClass', SomeClass::class);
-        /** @var SomeClass $class */
-        $class = $this->dic->get(SomeClass::class);
-        $args = $class->getInitialArguments();
-        assertSame('param2', $args[0]);
-        assertSame(BasicClass::class, $args[1]);
-        assertTrue(is_string($args[1]));
-        assertInstanceOf(SomeOtherClass::class, $args[2]);
-        $class = $args[2];
-        $args = $class->getInitialArguments();
-        assertInstanceOf(BasicClass::class, $args[0]);
-        assertSame(42, $args[1]);
-        assertSame(23, $args[2]);
-        $class = $args[0];
-        $args = $class->getInitialArguments();
-        assertSame(11, $args[0]);
-    }
-
-    /**
-     * @Then dependencies are not accessible from another sub-tree
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
-     */
-    public function dependenciesAreNotAccessibleFromAnotherSubTree()
-    {
-        $this->dic->load([
-            SomeClass::class => [
-                'param1' => 42,
-                BasicClass::class => [
-                    'param2'
-                ],
-            ],
-            SomeOtherClass::class => [
-                BasicClass::class,
-                'param2' => 23,
-                'param1'
-            ]
-        ]);
-
-        /** @var SomeClass $class */
-        $class = $this->dic->get(SomeClass::class);
-        $args = $class->getInitialArguments();
-        assertSame(42, $args[0]);
-        assertInstanceOf(BasicClass::class, $args[1]);
-        $class = $args[1];
-        $args = $class->getInitialArguments();
-        assertSame('param2', $args[0]);
-        $class = $this->dic->get(SomeOtherClass::class);
-        $args = $class->getInitialArguments();
-        assertSame(BasicClass::class, $args[0]);
-        assertTrue(is_string($args[0]));
-        assertSame(23, $args[1]);
-        assertSame('param1', $args[2]);
-    }
-
-    /**
-     * @Then dependencies defined in a near level are preferred over dependencies in a far level
-     *
-     * @throws CircularDependencyException
-     * @throws InvalidFactoryException
-     * @throws InvalidObjectConfigurationException
-     */
-    public function dependenciesDefinedInANearLevelArePreferredOverDependenciesInAFarLevel()
-    {
-        $this->dic->load([
-            'param1' => 23,
-            SomeClass::class => [
-                'param1' => 42,
-                SomeOtherClass::class => ['param1'],
-                BasicClass::class => [
-                    SomeOtherClass::class,
-                    'param1'
-                ],
-            ],
-            SomeOtherClass::class => []
-        ]);
-
-        /** @var SomeClass $class */
-        $class = $this->dic->get(SomeClass::class);
-        $args = $class->getInitialArguments();
-        assertSame(42, $args[0]);
-        assertInstanceOf(SomeOtherClass::class, $args[1]);
-        $someOtherClass = $args[1];
-        assertInstanceOf(BasicClass::class, $args[2]);
-        $class = $args[2];
-        $args = $class->getInitialArguments();
-        assertSame($args[0], $someOtherClass);
-        assertSame(42, $args[1]);
+        try {
+            di_make(self::CLASS_NAMESPACE.$className);
+            assertSame(true, false);
+        } catch (Exception $e) {
+            assertSame(InvalidArgumentException::class, get_class($e));
+        }
     }
 }

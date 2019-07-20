@@ -14,7 +14,7 @@ namespace eArc\DI\bridge;
 use eArc\DI\CoObjects\ParameterBag;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
-class SymfonyParameterBag extends ParameterBag
+abstract class SymfonyParameterBag extends ParameterBag
 {
     /** @var ContainerInterface */
     protected static $container;

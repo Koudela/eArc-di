@@ -136,7 +136,7 @@ interface ResolverInterface
 
     /**
      * Returns an iterable for iterating over all fully qualified class names being
-     * tagged by a tag.
+     * tagged by a tag. Decoration is not applied.
      *
      * @param string $name The tag name.
      *
@@ -179,4 +179,6 @@ interface ResolverInterface
      * @param string|null $fQCN The identifier of the mocked class.
      */
     public static function clearMock(string $fQCN=null): void;
+
+    #TODO: debugResolver
 }

@@ -11,18 +11,6 @@
 
 namespace eArc\DITests\env;
 
-class SomeOtherClass
+class SomeOtherClass implements SomeInterface
 {
-    /** @var mixed[] */
-    protected $args;
-
-    public function __construct(...$args)
-    {
-        $this->args = $args;
-    }
-
-    public function getInitialArguments()
-    {
-        return $this->args;
-    }
 }

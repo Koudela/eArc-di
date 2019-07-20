@@ -33,7 +33,6 @@ namespace eArc\DI {
 
 namespace {
 
-    use ___PHPSTORM_HELPERS\object;
     use eArc\DI\CoObjects\Resolver;
     use eArc\DI\Exceptions\InvalidArgumentException;
     use eArc\DI\CoObjects\ParameterBag;
@@ -67,13 +66,13 @@ namespace {
         public static function init(string $resolver=Resolver::class, string $parameterBag=ParameterBag::class): void
         {
             if (!is_subclass_of($resolver, ResolverInterface::class)) {
-                throw new InvalidArgumentException(sprintf('Resolver has to implement %s.', ResolverInterface::class));
+                throw new InvalidArgumentException(sprintf('Resolver %s has to implement %s.', $resolver, ResolverInterface::class));
             }
 
             self::$resolver = $resolver;
 
             if (!is_subclass_of($parameterBag, ParameterBagInterface::class)) {
-                throw new InvalidArgumentException(sprintf('ParameterBag has to implement %s.', ParameterBagInterface::class));
+                throw new InvalidArgumentException(sprintf('ParameterBag %s has to implement %s.', $parameterBag, ParameterBagInterface::class));
             }
 
             self::$parameterBag = $parameterBag;
@@ -127,7 +126,7 @@ namespace {
             }
 
             if (!function_exists('di_get_decorator')) {
-                function di_get_decorator(string $fQCN): string
+                function di_get_decorator(string $fQCN): ?string
                 {
                     return BootstrapEArcDI::getResolver()::getDecorator($fQCN);
                 }
@@ -162,9 +161,9 @@ namespace {
             }
 
             if (!function_exists('di_is_mocked')) {
-                function di_is_mocked(string $fQCN): void
+                function di_is_mocked(string $fQCN): bool
                 {
-                    BootstrapEArcDI::getResolver()::isMocked($fQCN);
+                    return BootstrapEArcDI::getResolver()::isMocked($fQCN);
                 }
             }
 

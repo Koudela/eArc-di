@@ -72,6 +72,9 @@ abstract class Resolver implements ResolverInterface
      */
     protected static function makeDirect(string $fQCN)
     {
+        if (!class_exists($fQCN)) {
+            throw new MakeClassException(sprintf('No class found for %s.', $fQCN));
+        }
         try {
             return new $fQCN();
         } catch (Exception $e) {
@@ -126,7 +129,9 @@ abstract class Resolver implements ResolverInterface
 
     public static function getTagged(string $name): iterable
     {
-        foreach (self::$tags[$name] as $fQCN => $value) {
+        $iterate = self::$tags[$name] ?? [];
+
+        foreach ($iterate as $fQCN => $value) {
             yield $fQCN;
         }
     }

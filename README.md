@@ -428,6 +428,8 @@ check for it to avoid failure on name conflicts or forgotten methods. And yes,
 logging handlers not implementing the interface is a good idea. But you know about
 the architecture your software needs (and can afford) best.
 
+Hint: Decoration is not applied to the tags but to `di_get` of course.
+
 ## troubleshooting
 
 earc/di has dropped circular dependency detection in favour of performance. If you

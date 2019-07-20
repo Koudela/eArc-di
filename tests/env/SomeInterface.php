@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * e-Arc Framework - the explicit Architecture Framework
  * dependency injection component
@@ -11,21 +11,6 @@
 
 namespace eArc\DITests\env;
 
-class CountInstantiations
+interface SomeInterface
 {
-    static $count = 0;
-
-    /** @var mixed[] */
-    protected $args;
-
-    public function __construct(...$args)
-    {
-        $this->args = $args;
-        self::$count++;
-    }
-
-    public function getInitialArguments()
-    {
-        return $this->args;
-    }
 }

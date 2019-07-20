@@ -13,16 +13,4 @@ namespace eArc\DITests\env;
 
 class BasicClass
 {
-    /** @var mixed[] */
-    protected $args;
-
-    public function __construct(...$args)
-    {
-        $this->args = $args;
-    }
-
-    public function getInitialArguments()
-    {
-        return $this->args;
-    }
 }
