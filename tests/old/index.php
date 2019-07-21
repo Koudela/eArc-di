@@ -79,8 +79,8 @@ class D extends A
 DI::init();
 di_import_param(['p1' => 'Hase', 'p2' => ['px' => 'Igel']]);
 /* @var C $c */
-#di_decorate(I1::class, C::class);
-$c = di_get(I1::class, C::class);
+di_decorate(I1::class, C::class);
+$c = di_get(I1::class);
 $c->getB()->getA()->sayHello();
 $c->getA()->sayHello();
 $c->getB()->sayHello();
@@ -96,3 +96,17 @@ $c = di_make(C::class);
 $c->getB()->getA()->sayHello();
 $c->getA()->sayHello();
 $c->getB()->sayHello();
+
+function something_cool($times) {
+    return $times.' x icecream';
+}
+
+echo "\n\n\n".di_static('something_cool')(42); // returns '42 x icecream'
+
+function something_cool_but_its_winter($times) {
+    return $times.' x hot tea';
+}
+
+di_decorate('something_cool', 'something_cool_but_its_winter');
+
+echo "\n".di_static('something_cool')(42); // returns '42 x hot tea'

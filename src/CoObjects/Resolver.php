@@ -60,7 +60,7 @@ abstract class Resolver implements ResolverInterface
      */
     protected static function checkTypeHint(string $typeHint, string $decorator)
     {
-        if (self::isDecorated($typeHint) &&!is_subclass_of($decorator, $typeHint)) {
+        if (self::isDecorated($typeHint) && !is_subclass_of($decorator, $typeHint)) {
             throw new InvalidArgumentException(sprintf('Decorator %s violates type hint %s,', $decorator, $typeHint));
         }
     }

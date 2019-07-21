@@ -49,7 +49,7 @@ which builds on the top of earc/di.
 - **architectural optimized code** - no pre building or pre compiling needed
 - **support for all standard dependency enrichment techniques** - decoration, mocking, 
  tagging
-- **decoration of static method access** - finally you are able to mock static methods  
+- **support for decorating plain function calls**
 - **support for explicit programming/architecture** - a class has hold of all its 
  implementation details (apart from decoration, mocking and parameters which are by 
  their very nature foreign context driven)
@@ -279,18 +279,17 @@ get_class(di_make(ServiceContainingAnError::class)); // equals ServiceDecorator:
 Everywhere the error-prone service was injected now the class with the fix demands 
 its place.
 
-earc/di enables you to decorate classes that have static methods.
+earc/di enables you to decorate abstract classes.
 
 ```php
-$staticService = di_static(StaticService::class)
-$staticService::staticMethod(); // calls StaticService::staticMethod()
+$staticService = di_static(AbstractService::class)
+$staticService::staticMethod(); // calls AbstractService::staticMethod()
 
-di_decorate(StaticService::class, StaticServiceDecorator::class);
+di_decorate(StaticService::class, AbstractServiceDecorator::class);
 
 $staticService = di_static(StaticService::class)
-$staticService::staticMethod(); // calls StaticServiceDecorator::staticMethod()
+$staticService::staticMethod(); // calls AbstractServiceDecorator::staticMethod()
 ```
-
 
 For debugging purpose `di_is_decorated` and `di_get_decorator` are handy functions.
 But be aware that it debugs the *current* decoration, not the result of a decorator
@@ -315,10 +314,9 @@ get_class(di_get(Service::class)); // equals Service::class
 
 ## mocking
 
-In some testing libraries mocks are class objects manipulated by reflection. Thus
-you can't use decoration for replacing the original class. `di_mock` is made for
-this use cases. 
-   
+In most testing libraries mocks are objects. Thus you can't use decoration for replacing 
+the original class. `di_mock` is made for this use cases. 
+
 ```php
 $getObj = di_get(Service::class);
 $makeObj = di_get(Service::class);
@@ -332,7 +330,8 @@ Assert::assertSame($getObj, di_get(Service::class)); // fails
 Assert::assertSame($makeObj, di_make(Service::class)); // fails
 ```
 
-Keep in mind: Static accessed methods can be mocked via decoration only.
+Keep in mind: Static accessed methods (via `di_static`) can be mocked via decoration only
+as `di_static` returns a `string` and `di_mock` takes an `object`.
 
 ```php
 di_static(StaticService::class)::staticMethod(); // calls StaticService::staticMethod()
@@ -384,8 +383,9 @@ Assert::assertSame(2, di_get(Service::class)->iAmMock) // passes
 Assert::assertSame(2, di_get(ServiceDecorator::class)->iAmMock) // passes
 ```
 
-As you see in the example code mocks are not forced to follow the type-hints. This
-means you can create your mocks without reflexion and thus let your tests run faster. 
+As you see in the example code mocks are not forced to follow the type hints. This
+means you can pass as mock whatever you want. (As long as your code do not pass your 
+Services as type hinted arguments around.) 
 
 ## tagging
 
@@ -459,6 +459,25 @@ $ PHP Fatal error:  Uncaught Error: Maximum function nesting level of '256' reac
  was set/imported.
  
 ## advanced usage  
+
+Some usages are not obvious but desirable, like function decoration. If call
+your own functions with `di_static` they can be decorated using `di_decorate`!
+
+```php
+function something_cool($times) {
+    return $times.' x icecream';
+}
+
+di_static('something_cool')(42); // returns '42 x icecream'
+
+function something_cool_but_its_winter($times) {
+    return $times.' x hot tea';
+}
+
+di_decorate('something_cool', 'something_cool_but_its_winter');
+
+di_static('something_cool')(42); // returns '42 x hot tea'
+```
 
 ### performance considerations
 
