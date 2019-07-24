@@ -57,7 +57,9 @@ which builds on the top of earc/di.
 
 ### cons
 
-- **dependency** on a dependency injection library
+- **dependency** on a dependency injection library - although its a really soft
+coupling (you can adjust and even replace the logic behind the `di_*` functions by 
+any logic you like.) 
 - **small overhead** - decoration, mocking and tagging need some programming logic
 
 ## installation
@@ -411,7 +413,7 @@ di_tag(Service014::class,'tag.name');
 Your base class can retrieve the service classes by iterating over `di_get_tagged('tag.name')`
 
 ```php
-foreach (di_get_tagged('tag.name') as $handlerName) {
+foreach (di_get_tagged('tag.name') as $handlerName => $argument) {
     $handler = di_get($handlerName);
     if ($handler->canHandleTask($task)) {
         $result = $handler->handleTask($task);
@@ -422,6 +424,9 @@ foreach (di_get_tagged('tag.name') as $handlerName) {
 
 throw new TaskNotHandledException($task);
 ```
+
+If you would have pass a third argument to `di_tag` `$argument` would hold this
+argument instead of `null`. 
 
 Of course the services should implement an interface and the base service should
 check for it to avoid failure on name conflicts or forgotten methods. And yes,
@@ -460,8 +465,8 @@ $ PHP Fatal error:  Uncaught Error: Maximum function nesting level of '256' reac
  
 ## advanced usage  
 
-Some usages are not obvious but desirable, like function decoration. If call
-your own functions with `di_static` they can be decorated using `di_decorate`!
+Some usages are not obvious but desirable, like function decoration. If you call
+your own functions with `di_static` they can be decorated using `di_decorate`.
 
 ```php
 function something_cool($times) {
@@ -524,6 +529,10 @@ migrate step by step).
 There is no limit. Create your own one to rule them all and make your live easy again.    
 
 ## releases
+
+### release v2.1
+
+* an argument can be passed for an tag
 
 ### release v2.0
 

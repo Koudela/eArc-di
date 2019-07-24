@@ -122,17 +122,17 @@ abstract class Resolver implements ResolverInterface
         return isset(self::$decorator[$fQCN]) ? self::$decorator[$fQCN] : null;
     }
 
-    public static function tag(string $fQCN, string $name): void
+    public static function tag(string $fQCN, string $name, $argument=null): void
     {
-        self::$tags[$name][$fQCN] = true;
+        self::$tags[$name][$fQCN] = $argument;
     }
 
     public static function getTagged(string $name): iterable
     {
         $iterate = self::$tags[$name] ?? [];
 
-        foreach ($iterate as $fQCN => $value) {
-            yield $fQCN;
+        foreach ($iterate as $fQCN => $argument) {
+            yield $fQCN => $argument;
         }
     }
 
