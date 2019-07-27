@@ -146,6 +146,29 @@ class FeatureContext implements Context
     }
 
     /**
+     * @Given /^(.*) is batch decorated by (.*)$/
+     *
+     * @param string $className
+     * @param string $decorator
+     */
+    public function IsBatchDecoratedBy(string $className, string $decorator)
+    {
+        di_import_param(['earc' => ['di' => ['class_decoration' => [self::CLASS_NAMESPACE.$className => self::CLASS_NAMESPACE.$decorator]]]]);
+
+        DI::importParameter();
+    }
+
+    /**
+     * @Given namespace decoration is initialised
+     */
+    public function namespaceDecorationIsInitialised()
+    {
+        di_import_param(['earc' => ['di' => ['namespace_decoration' => [[self::CLASS_NAMESPACE.'project_one', self::CLASS_NAMESPACE.'project_two']]]]]);
+
+        DI::importParameter();
+    }
+
+    /**
      * @Then /^di_get_decorator with parameter (.*) returns (.*)$/
      *
      * @param string $className
@@ -210,8 +233,8 @@ class FeatureContext implements Context
     {
         $array = '' !== $array ? explode(',', $array) : [];
         $cnt = 0;
-        foreach (di_get_tagged($tagName) as $value) {
-            assertSame($value, self::CLASS_NAMESPACE.trim($array[$cnt++]));
+        foreach (di_get_tagged($tagName) as $key => $value) {
+            assertSame($key, self::CLASS_NAMESPACE.trim($array[$cnt++]));
         }
 
         assertSame($cnt, count($array));
@@ -329,7 +352,7 @@ class FeatureContext implements Context
     }
 
     /**
-     * @Then /^di_param with parameter (.*) returns (.*)$/
+     * @Then /^di_param with parameter ([^n].*) returns (.*)$/
      *
      * @param string $key
      * @param string $value
@@ -337,6 +360,18 @@ class FeatureContext implements Context
     public function diParamWithParameterReturns(string $key, string $value)
     {
         assertSame($this->transformString($value), di_param($key));
+    }
+
+    /**
+     * @Then /^di_param with parameter name (.*) and default (.*) returns (.*)$/
+     *
+     * @param string $key
+     * @param string default
+     * @param string $value
+     */
+    public function diParamWithParameterNameAndDefaultReturns(string $key, string $default, string $value)
+    {
+        assertSame($this->transformString($value), di_param($key, $this->transformString($default)));
     }
 
     /**

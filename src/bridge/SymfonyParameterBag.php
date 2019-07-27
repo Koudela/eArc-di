@@ -33,11 +33,12 @@ abstract class SymfonyParameterBag extends ParameterBag
         return parent::has($key);
     }
 
-    public static function get(string $key)
+    public static function get(string $key, $default = null)
     {
         if (self::$container->hasParameter($key)) {
             return self::$container->getParameter($key);
         }
+
         return parent::get($key);
     }
 }

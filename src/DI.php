@@ -15,9 +15,13 @@ namespace eArc\DI {
     use eArc\DI\CoObjects\ParameterBag;
     use eArc\DI\Exceptions\InvalidArgumentException;
     use BootstrapEArcDI;
+    use eArc\DI\Exceptions\NotFoundException;
 
     abstract class DI
     {
+        const PARAM_KEY_DECORATION_CLASS = 'earc.di.class_decoration';
+        const PARAM_KEY_DECORATION_NAMESPACE = 'earc.di.namespace_decoration';
+
         /**
          * @param string $resolver
          * @param string $parameterBag
@@ -27,6 +31,25 @@ namespace eArc\DI {
         public static function init(string $resolver=Resolver::class, string $parameterBag=ParameterBag::class): void
         {
             BootstrapEArcDI::init($resolver, $parameterBag);
+        }
+
+        public static function importParameter(): void
+        {
+            try {
+                BootstrapEArcDI::getResolver()::batchDecorate(
+                    BootstrapEArcDI::getParameterBag()::get(DI::PARAM_KEY_DECORATION_CLASS)
+                );
+            } catch (NotFoundException $exception) {
+                // do nothing
+            }
+
+            try {
+                BootstrapEArcDI::getResolver()::addNamespaceDecoration(
+                    BootstrapEArcDI::getParameterBag()::get(DI::PARAM_KEY_DECORATION_NAMESPACE)
+                );
+            } catch (NotFoundException $exception) {
+                // do nothing
+            }
         }
     }
 }
@@ -175,9 +198,9 @@ namespace {
             }
 
             if (!function_exists('di_param')) {
-                function di_param(string $key)
+                function di_param(string $key, $default=null)
                 {
-                    return BootstrapEArcDI::getParameterBag()::get($key);
+                    return BootstrapEArcDI::getParameterBag()::get($key, $default);
                 }
             }
 

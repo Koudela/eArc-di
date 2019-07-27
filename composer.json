@@ -2,7 +2,7 @@
     "name": "earc/di",
     "description": "eArc - the explicit architecture framework - dependency injection component",
     "type": "library",
-    "version": "2.1",
+    "version": "2.2",
     "minimum-stability": "dev",
     "prefer-stable" : true,
     "require": {

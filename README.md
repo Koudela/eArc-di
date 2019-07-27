@@ -17,6 +17,7 @@ which builds on the top of earc/di.
    - [import](#import)
  - [factories](#factories)
  - [decoration](#decoration)
+ - [namespace decoration](#namespace-decoration)
  - [mocking](#mocking)
  - [tagging](#tagging)
  - [troubleshooting](#troubleshooting)
@@ -26,6 +27,8 @@ which builds on the top of earc/di.
    - [architectural considerations](#architectural-considerations)
    - [integration with other di systems](#integration-with-other-di-systems)
  - [releases](#releases)
+   - [release v2.2](#release-v22)
+   - [release v2.2](#release-v21)
    - [release v2.0](#release-v20)
    - [release v1.0](#release-v10)
    - [release v0.1](#release-v01)
@@ -153,6 +156,10 @@ cases a valuable dynamically generated parameter.
 
 Hint: A mutable global parameters is no parameter at all. Otherwise it would introduce
 really huge side effects.
+
+If the parameter is not set a `NotFoundException` is thrown by `di_param`. You can 
+suppress this behaviour by supplying a default parameter other than null as second 
+argument. Instead of throwing an exception the default parameter is returned.
 
 ### dot syntax
 
@@ -293,6 +300,37 @@ $staticService = di_static(StaticService::class)
 $staticService::staticMethod(); // calls AbstractServiceDecorator::staticMethod()
 ```
 
+Decoration is something you do in the configuration part of your software. To be not
+too cumbersome there is a way to do this in a configuration file. On calling `DI::importParameter()` 
+the parameter `earc.di.class_decoration` is imported.
+
+```YAML
+# config.yml
+
+earc:
+    di:
+        class_decoration:
+            namespace\\A\\SomeServiceClass: 'namespace\\B\\SomeServiceClass'
+            namespace\\A\\SomeOtherServiceClass: 'namespace\\B\\SomeOtherServiceClass'
+...
+```
+
+```php
+use eArc/DI/DI
+
+DI::init();
+
+di_import_param(
+    Yaml::parse(
+        file_get_contents('/path/to/config.yml')
+    )
+);
+
+DI::importParameter();
+```
+
+Please note the order of the calls is important.
+
 For debugging purpose `di_is_decorated` and `di_get_decorator` are handy functions.
 But be aware that it debugs the *current* decoration, not the result of a decorator
 chain.
@@ -313,6 +351,40 @@ di_decorate(Service::class, Service::class);
 di_is_decorated(Service::class); // equals false
 get_class(di_get(Service::class)); // equals Service::class
 ```
+## namespace decoration
+
+Sometimes you mirror the file structure from one project in another project. Then
+it may be desirable to decorate a class automatically by (re)placing it in the mirrored 
+file structure. That is what namespace decoration is for. You can activate this feature
+by setting the `earc.di.namespace_decoration` parameter before calling `DI::importParameter()`.
+
+```YAML
+# config.yml
+
+earc:
+    di:
+        namespace_decoration:
+            ['namespace\\of\\dir\\project\\A', 'namespace\\of\\mirrored\\dir\\project\\B']
+            # you can decorate as many namespaces you want.
+            # but you can even chain them. You have to name 
+            # every namespace decoration explicitly:
+            ['namespace\\of\\mirrored\\dir\\project\\B', 'namespace\\of\\mirrored\\dir\\project\\C'] 
+            ['namespace\\of\\dir\\project\\A', 'namespace\\of\\mirrored\\dir\\project\\C']
+```
+
+```php
+use eArc/DI/DI
+
+DI::init();
+
+di_import_param(
+    Yaml::parse(
+        file_get_contents('/path/to/config.yml')
+    )
+);
+
+DI::importParameter();
+```    
 
 ## mocking
 
@@ -529,6 +601,12 @@ migrate step by step).
 There is no limit. Create your own one to rule them all and make your live easy again.    
 
 ## releases
+
+### release v2.2
+
+* default parameter 
+* batch decoration
+* namespace decoration
 
 ### release v2.1
 

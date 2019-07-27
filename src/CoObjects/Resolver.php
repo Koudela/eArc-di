@@ -22,6 +22,7 @@ abstract class Resolver implements ResolverInterface
     protected static $decorator = [];
     protected static $tags = [];
     protected static $mock = [];
+    protected static $namespaceDecorators;
 
     public static function get(string $fQCN): object
     {
@@ -84,7 +85,12 @@ abstract class Resolver implements ResolverInterface
 
     public static function resolve(string $fQCN): string
     {
-        return isset(self::$decorator[$fQCN]) ? static::resolve(self::$decorator[$fQCN]) : $fQCN;
+        if ($decorator = static::getDecorator($fQCN))
+        {
+            return static::resolve($decorator);
+        }
+
+        return $fQCN;
     }
 
     public static function has(string $fQCN): bool
@@ -114,12 +120,57 @@ abstract class Resolver implements ResolverInterface
 
     public static function isDecorated(string $fQCN): bool
     {
-        return isset(self::$decorator[$fQCN]);
+        if (isset(self::$decorator[$fQCN])) {
+            return true;
+        }
+
+        if (null != self::$namespaceDecorators) {
+            return null !== static::matchDecoratedNamespace($fQCN);
+        }
+
+        return false;
     }
 
     public static function getDecorator(string $fQCN): ?string
     {
-        return isset(self::$decorator[$fQCN]) ? self::$decorator[$fQCN] : null;
+        if (isset(self::$decorator[$fQCN])) {
+            return self::$decorator[$fQCN];
+        }
+
+        if (null != self::$namespaceDecorators) {
+            return static::matchDecoratedNamespace($fQCN);
+        }
+
+        return null;
+    }
+
+    protected static function matchDecoratedNamespace(string $fQCN): ?string
+    {
+        foreach (self::$namespaceDecorators as list($namespaceKey, $namespaceValue)) {
+            if (0 === strpos($fQCN, $namespaceKey)) {
+                $className = $namespaceValue.substr($fQCN, strlen($namespaceKey));
+
+                if (class_exists($className)) {
+                    return $className;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public static function batchDecorate(array $settings): void
+    {
+        self::$decorator += $settings;
+    }
+
+    public static function addNamespaceDecoration(array $settings): void
+    {
+        if (null === self::$namespaceDecorators) {
+            self::$namespaceDecorators = [];
+        }
+
+        self::$namespaceDecorators += $settings;
     }
 
     public static function tag(string $fQCN, string $name, $argument=null): void

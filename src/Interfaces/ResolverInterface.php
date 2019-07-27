@@ -127,6 +127,26 @@ interface ResolverInterface
     public static function getDecorator(string $fQCN): ?string;
 
     /**
+     * Imports decoration settings as an array of key value pairs, where the key
+     * is the fully qualified class name of the decorated class and the value the
+     * fully qualified class name of the decorator.
+     *
+     * @param array $settings
+     */
+    public static function batchDecorate(array $settings): void;
+
+    /**
+     * Adds namespace decoration settings as an array of key value pairs, where the
+     * key is the namespace that gets decorated by the namespace of the value. As
+     * result if the beginning of a fully qualified class name is equal to a key and
+     * replacing it by the value results in a valid class, the class is decorated
+     * automatically.
+     *
+     * @param array $settings
+     */
+    public static function addNamespaceDecoration(array $settings): void;
+
+    /**
      * Adds a tag to a class.
      *
      * @param string $fQCN     The fully qualified class name of the class to tag.
@@ -180,6 +200,4 @@ interface ResolverInterface
      * @param string|null $fQCN The identifier of the mocked class.
      */
     public static function clearMock(string $fQCN=null): void;
-
-    #TODO: debugResolver
 }

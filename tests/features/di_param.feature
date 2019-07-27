@@ -10,6 +10,7 @@ Feature: earc/di - base functionality - di_param, di_has_param, di_set_param, di
     Scenario: not set dotted
         Then di_has_param with parameter some.nested.parameter returns false
         Then di_param with parameter some.nested.parameter throws NotFoundException
+        Then di_param with parameter name some.nested.parameter and default false returns false
 
     Scenario: set
         Given di_set_param with parameter some_parameter and all 42 hero is called

@@ -24,13 +24,15 @@ interface ParameterBagInterface
     /**
      * Retrieves a parameter from the bag. `get` supports the dot syntax.
      *
-     * @param string $key The parameter key.
+     * @param string $key     The parameter key.
+     * @param mixed  $default If not equal null instead of throwing a NotFoundException
+     *                        the default value is returned.
      *
      * @return mixed
      *
      * @throws NotFoundException The Parameter is not set.
      */
-    public static function get(string $key);
+    public static function get(string $key, $default = null);
 
     /**
      * Checks whether a parameter exists. `has` supports the dot syntax.

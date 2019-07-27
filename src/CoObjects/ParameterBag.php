@@ -28,9 +28,13 @@ abstract class ParameterBag implements ParameterBagInterface
         }
     }
 
-    public static function get(string $key)
+    public static function get(string $key, $default = null)
     {
         if (!static::has($key)) {
+            if (null !== $default) {
+                return $default;
+            }
+
             throw new NotFoundException(sprintf('Parameter %s was never added to the parameter bag.', $key));
         }
 

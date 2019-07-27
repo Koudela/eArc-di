@@ -33,5 +33,10 @@ class SymfonyDICompilerPass implements CompilerPassInterface
         SymfonyParameterBag::setContainer($container);
 
         DI::init(SymfonyResolver::class, SymfonyParameterBag::class);
+
+        di_set_param(DI::PARAM_KEY_DECORATION_CLASS, $container->getParameter(DI::PARAM_KEY_DECORATION_CLASS));
+        di_set_param(DI::PARAM_KEY_DECORATION_NAMESPACE, $container->getParameter(DI::PARAM_KEY_DECORATION_NAMESPACE));
+
+        DI::importParameter();
     }
 }
