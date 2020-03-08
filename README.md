@@ -567,7 +567,14 @@ If you use an object only once or for a tiny moment it might save a bit of memor
 if you use `di_make` instead. 
 
 Calling `di_has` performs existence checks for classes and interfaces. This checks
-can trigger an autoload. Use them wisely.
+can trigger an autoload. Use them wisely. The same is true for `di_is_decorated` in
+the case you use namespace decoration.
+
+Namespace decoration uses string substitution which is considerable slower than
+key lookups on arrays. Nevertheless if you have to decorate hundreds of classes 
+it outperforms explicit configuration since it is used only on classes which are 
+active for the request, wheres configuration must be processed on every request 
+for all decorated classes.
 
 ### architectural considerations
 

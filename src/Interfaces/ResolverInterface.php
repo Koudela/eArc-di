@@ -5,7 +5,7 @@
  *
  * @package earc/di
  * @link https://github.com/Koudela/eArc-di/
- * @copyright Copyright (c) 2018-2019 Thomas Koudela
+ * @copyright Copyright (c) 2018-2020 Thomas Koudela
  * @license http://opensource.org/licenses/MIT MIT License
  */
 
@@ -72,7 +72,7 @@ interface ResolverInterface
      *
      * `has($fQCN)` returning true does not mean that `get($fQCN)` or `make($fQCN)`
      * will not throw an exception. It does however mean that `get($fQCN)` and `make($fQCN)`
-     * will not throw a `NotFoundExceptionInterface`.
+     * will not throw a `NotFoundException`.
      *
      * @param string $fQCN Identifier of the class to look for.
      *
