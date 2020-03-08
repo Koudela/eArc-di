@@ -28,7 +28,7 @@ which builds on the top of earc/di.
    - [integration with other di systems](#integration-with-other-di-systems)
  - [releases](#releases)
    - [release v2.2](#release-v22)
-   - [release v2.2](#release-v21)
+   - [release v2.1](#release-v21)
    - [release v2.0](#release-v20)
    - [release v1.0](#release-v10)
    - [release v0.1](#release-v01)
