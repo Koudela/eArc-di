@@ -15,6 +15,7 @@ which builds on the top of earc/di.
    - [usage](#usage)
    - [dot syntax](#dot-syntax)
    - [import](#import)
+   - [best practice](#best-practice)
  - [factories](#factories)
  - [decoration](#decoration)
  - [namespace decoration](#namespace-decoration)
@@ -234,6 +235,26 @@ di_import_param(
 Thus libraries are able to offer default parameter which may (or may not) be changed
 by software using this library.
 
+### best practice
+
+Define in your Project one `ParameterInterface` per module. Define all parameter
+keys (dot syntax) via constants in the `ParameterInterface`. Let all classes using
+parameters implement the `ParameterInterface` of the module.
+
+For example the `ParameterInterface` of the [earc/event-tree]() let you know all
+Parameters that might be relevant to you. You don't need to know all the documentation,
+just one file. Such explicit programming could be a live saver in sparsely documented
+projects.
+
+```php
+interface ParameterInterface
+{
+    const VENDOR_DIR = 'earc.vendor_directory';
+    const ROOT_DIRECTORIES = 'earc.event_tree.directories';
+    const BLACKLIST = 'earc.event_tree.blacklist';
+}
+```   
+
 ## factories
 
 earc/di does not know the concept of a factory. The best practice is to inject the 
@@ -243,7 +264,7 @@ from.
 ```php
 public function construct()
 {
-    $factory = di_get(Factory::class)
+    $factory = di_get(Factory::class);
     $this->object = $factory->build();
 }
 ```
