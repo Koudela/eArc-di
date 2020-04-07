@@ -147,6 +147,19 @@ interface ResolverInterface
     public static function addNamespaceDecoration(array $settings): void;
 
     /**
+     * Registers a factory for a class identified by its fully qualified class name.
+     * The factory has to return a object is an instance of the fully qualified class
+     * name, otherwise a MakeClassException is thrown if the object is retrieved
+     * via `get($fQCN)` and `make($fQCN)`. If `registerFactory` is called twice
+     * for the same `$fQCN` the `$factory` passed on the second call is used. Passing
+     * `null` as `$factory` unregisters the last registered factory.
+     *
+     * @param string $fQCN
+     * @param callable|null $factory
+     */
+    public static function registerFactory(string $fQCN, ?callable $factory): void;
+
+    /**
      * Adds a tag to a class.
      *
      * @param string $fQCN     The fully qualified class name of the class to tag.

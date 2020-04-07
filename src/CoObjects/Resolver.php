@@ -20,6 +20,7 @@ abstract class Resolver implements ResolverInterface
 {
     protected static $instance = [];
     protected static $decorator = [];
+    protected static $factory = [];
     protected static $tags = [];
     protected static $mock = [];
     protected static $namespaceDecorators;
@@ -73,6 +74,16 @@ abstract class Resolver implements ResolverInterface
      */
     protected static function makeDirect(string $fQCN)
     {
+        if (isset(self::$factory[$fQCN])) {
+            $object = call_user_func(self::$factory[$fQCN]);
+            if (!$object instanceof $fQCN) {
+                throw new MakeClassException(sprintf(
+                    'Factory returned class of type `%s` is registered for type `%s`.',
+                    is_object($object) ? get_class($object) : gettype($object), $fQCN));
+            }
+            return $object;
+        }
+
         if (!class_exists($fQCN)) {
             throw new MakeClassException(sprintf('No class found for %s.', $fQCN));
         }
@@ -171,6 +182,15 @@ abstract class Resolver implements ResolverInterface
         }
 
         self::$namespaceDecorators += $settings;
+    }
+
+    public static function registerFactory(string $fQCN, ?callable $factory): void
+    {
+        if (null === $factory) {
+            unset(self::$factory[$fQCN]);
+        } else {
+            self::$factory[$fQCN] = $factory;
+        }
     }
 
     public static function tag(string $fQCN, string $name, $argument=null): void

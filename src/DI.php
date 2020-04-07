@@ -155,6 +155,13 @@ namespace {
                 }
             }
 
+            if (!function_exists('di_register_factory')) {
+                function di_register_factory(string $fQCN, ?callable $factory): void
+                {
+                    BootstrapEArcDI::getResolver()::registerFactory($fQCN, $factory);
+                }
+            }
+
             if (!function_exists('di_tag')) {
                 function di_tag(string $fQCN, string $name, $argument=null): void
                 {

@@ -28,6 +28,7 @@ which builds on the top of earc/di.
    - [architectural considerations](#architectural-considerations)
    - [integration with other di systems](#integration-with-other-di-systems)
  - [releases](#releases)
+   - [release v2.3](#release-v23)
    - [release v2.2](#release-v22)
    - [release v2.1](#release-v21)
    - [release v2.0](#release-v20)
@@ -103,13 +104,17 @@ Classes injected by `di_get` or `di_make` must not have constructor parameters.
 Surprisingly \*cough\* there is no need for constructor parameters. 
 
 ```php
-public function construct()
-{
-    $this->dependency1 = di_get(DependencyOne::class);
-    $this->dependency2 = di_get(DependencyTwo::class);
-    $this->parameterAlpha = di_param('alpha');
-    $this->parameterBeta = di_param('beta');
-    $this->parameterGamma = di_param('gamma');
+class alphaCentauri {
+    //...
+    public function construct()
+    {
+        $this->dependency1 = di_get(DependencyOne::class);
+        $this->dependency2 = di_get(DependencyTwo::class);
+        $this->parameterAlpha = di_param('alpha');
+        $this->parameterBeta = di_param('beta');
+        $this->parameterGamma = di_param('gamma');
+    }
+    //...
 }
 ```
 
@@ -120,15 +125,15 @@ class Example
 {
     public function getResult($param)
     {
-        $math = di_get(Math::class)
-        return $math->calculate($param, di_param('pi'))
+        $math = di_get(Math::class);
+        return $math->calculate($param, di_param('pi'));
     }
 }
 
 function depending_on_injection($param)
 {
-        $math = di_get(Math::class)
-        return $math->calculate($param, di_param('pi'))
+        $math = di_get(Math::class);
+        return $math->calculate($param, di_param('pi'));
 }
 
 $result = depending_on_injection(42);
@@ -189,22 +194,22 @@ keeps it flexible for all implementation details and frameworks. You can hardcod
 your Parameters
  
 ```php
-# conig.php
+# config.php
 
 di_import_param([
     'data' => [
         'server' => [
             'mysql' => [
-                'user' => 'foo'
-                'db' => 'bar'
-                'password' => 'x23W!_bxTff'
-                ...
-            ]
-            ...
+                'user' => 'foo',
+                'db' => 'bar',
+                'password' => 'x23W!_bxTff',
+                //...
+            ],
+            //...
         ],
-        ...
+        //...
     ],
-    ...
+    //...
 ]);
 ```
 
@@ -241,10 +246,11 @@ Define in your Project one `ParameterInterface` per module. Define all parameter
 keys (dot syntax) via constants in the `ParameterInterface`. Let all classes using
 parameters implement the `ParameterInterface` of the module.
 
-For example the `ParameterInterface` of the [earc/event-tree]() let you know all
-Parameters that might be relevant to you. You don't need to know all the documentation,
-just one file. Such explicit programming could be a live saver in sparsely documented
-projects.
+For example the `ParameterInterface` of the 
+[earc/event-tree](https://github.com/Koudela/eArc-eventTree/blob/master/src/Interfaces/ParameterInterface.php) 
+let you know all Parameters that might be relevant to you. You don't need to know 
+all the documentation, just one file. Such explicit programming could be a live 
+saver in sparsely documented projects.
 
 ```php
 interface ParameterInterface
@@ -257,17 +263,25 @@ interface ParameterInterface
 
 ## factories
 
-earc/di does not know the concept of a factory. The best practice is to inject the 
-factory itself. Thus the class keeps all the information where its dependencies come 
-from.  
+If you want to use objects of third party libraries which are not using earc/di, 
+they are sometimes not easy to build. Think of the doctrine `EntityManager`. It is
+such a common object in apps using doctrine, it is a serious obstacle to inject
+a factory instance instead of the real object. 
+
+Use `di_register_factory` instead to registers a `callable` to a fully qualified 
+class name. 
 
 ```php
-public function construct()
-{
-    $factory = di_get(Factory::class);
-    $this->object = $factory->build();
-}
+di_register_factory(SomeInterface::class, [Factory::class, 'build']);
 ```
+
+Thereafter the `callable` is used for building the object.
+
+If an instance was retrieved by `get` already, you must call `clear_cache($fCQN)`
+manually to `get` the instance from the factory.
+
+If you register a second factory to the same fully qualified class name, the second
+factory is used. By passing `null` as factory parameter you can unregister a factory.
 
 ## decoration
 
@@ -280,7 +294,7 @@ to build and inject anymore. Therefore each interface used as parameter for `di_
 or `di_make` must be decorated first.
 
 ```php
-di_decorate(Interface::class, ThisImplementsTheInterface::class);
+di_decorate(SomeInterface::class, ThisImplementsTheInterface::class);
 ```   
 
 But decoration is much more. It is where the last decision is made what to inject
@@ -312,12 +326,12 @@ its place.
 earc/di enables you to decorate abstract classes.
 
 ```php
-$staticService = di_static(AbstractService::class)
+$staticService = di_static(AbstractService::class);
 $staticService::staticMethod(); // calls AbstractService::staticMethod()
 
 di_decorate(StaticService::class, AbstractServiceDecorator::class);
 
-$staticService = di_static(StaticService::class)
+$staticService = di_static(StaticService::class);
 $staticService::staticMethod(); // calls AbstractServiceDecorator::staticMethod()
 ```
 
@@ -337,7 +351,7 @@ earc:
 ```
 
 ```php
-use eArc/DI/DI
+use eArc\DI\DI;
 
 DI::init();
 
@@ -394,7 +408,7 @@ earc:
 ```
 
 ```php
-use eArc/DI/DI
+use eArc\DI\DI;
 
 DI::init();
 
@@ -417,7 +431,7 @@ $getObj = di_get(Service::class);
 $makeObj = di_get(Service::class);
 
 $mockedService = TestCase::createMock(Service::class);
-di_mock(Service::class, $mockedService)
+di_mock(Service::class, $mockedService);
 
 Assert::assertSame($mockedService, di_get(Service::class)); // passes 
 Assert::assertSame($mockedService, di_make(Service::class)); // passes
@@ -446,7 +460,7 @@ Assert::assertSame(true, di_is_mocked(AnotherService::class)); // fails
 If you need the real service again use `di_clear_mock`.
 
 ```php
-di_clear_mock(Service::class)
+di_clear_mock(Service::class);
 
 Assert::assertSame($mockedService, di_get(Service::class)); // fails 
 Assert::assertSame($mockedService, di_make(Service::class)); // fails
@@ -470,12 +484,12 @@ di_mock(Service::class, (object) ['iAmMock' => 1]);
 di_mock(ServiceDecorator::class, (object) ['iAmMock' => 2]);
 di_decorate(Service::class, ServiceDecorator::class);
 
-Assert::assertSame(true, di_is_mocked(Service::class)) // passes
-Assert::assertSame(true, di_is_mocked(ServiceDecorator::class)) // passes
+Assert::assertSame(true, di_is_mocked(Service::class)); // passes
+Assert::assertSame(true, di_is_mocked(ServiceDecorator::class)); // passes
 
-Assert::assertSame(1, di_get(Service::class)->iAmMock) // fails
-Assert::assertSame(2, di_get(Service::class)->iAmMock) // passes
-Assert::assertSame(2, di_get(ServiceDecorator::class)->iAmMock) // passes
+Assert::assertSame(1, di_get(Service::class)->iAmMock); // fails
+Assert::assertSame(2, di_get(Service::class)->iAmMock); // passes
+Assert::assertSame(2, di_get(ServiceDecorator::class)->iAmMock); // passes
 ```
 
 As you see in the example code mocks are not forced to follow the type hints. This
@@ -629,6 +643,10 @@ migrate step by step).
 There is no limit. Create your own one to rule them all and make your live easy again.    
 
 ## releases
+
+### release v2.3
+
+* factory support
 
 ### release v2.2
 
