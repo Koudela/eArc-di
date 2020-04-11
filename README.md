@@ -644,6 +644,11 @@ There is no limit. Create your own one to rule them all and make your live easy 
 
 ## releases
 
+### release v2.4
+
+* IDE support for PHPStorm:
+    - return type support for `di_get` and `di_make`
+
 ### release v2.3
 
 * factory support

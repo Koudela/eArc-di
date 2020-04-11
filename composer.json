@@ -2,7 +2,7 @@
     "name": "earc/di",
     "description": "eArc - the explicit architecture framework - dependency injection component",
     "type": "library",
-    "version": "2.3",
+    "version": "2.4",
     "minimum-stability": "dev",
     "prefer-stable" : true,
     "require": {
@@ -16,8 +16,12 @@
         }
     ],
     "autoload": {
-        "psr-4" : {
-            "eArc\\DI\\" : "src",
+        "psr-4": {
+            "eArc\\DI\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
             "eArc\\DITests\\" : "tests"
         }
     },
