@@ -7,4 +7,8 @@ namespace PHPSTORM_META {
     override(\di_make(0), map([
         '' => '@',
     ]));
+
+    override(\di_static(0), map([
+        '' => '@',
+    ]));
 }

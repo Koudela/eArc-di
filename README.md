@@ -28,6 +28,7 @@ which builds on the top of earc/di.
    - [architectural considerations](#architectural-considerations)
    - [integration with other di systems](#integration-with-other-di-systems)
  - [releases](#releases)
+   - [release v2.4](#release-v24)
    - [release v2.3](#release-v23)
    - [release v2.2](#release-v22)
    - [release v2.1](#release-v21)
@@ -647,7 +648,7 @@ There is no limit. Create your own one to rule them all and make your live easy 
 ### release v2.4
 
 * IDE support for PHPStorm:
-    - return type support for `di_get` and `di_make`
+    - return type support for `di_get`, `di_make` and `di_static`
 
 ### release v2.3
 
