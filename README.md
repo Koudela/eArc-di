@@ -55,6 +55,7 @@ which builds on the top of earc/di.
 - **architectural optimized code** - no pre building or pre compiling needed
 - **support for all standard dependency enrichment techniques** - decoration, mocking, 
  tagging
+- **easy serialization** - no need to rewire your dependencies on wakeup.
 - **support for decorating plain function calls**
 - **support for explicit programming/architecture** - a class has hold of all its 
  implementation details (apart from decoration, mocking and parameters which are by 
