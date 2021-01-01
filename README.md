@@ -64,7 +64,7 @@ which builds on the top of earc/di.
 
 ### cons
 
-- **dependency** on a dependency injection library - although its a really soft
+- **dependency** on a dependency injection library - although it's a really soft
 coupling (you can adjust and even replace the logic behind the `di_*` functions by 
 any logic you like.) 
 - **small overhead** - decoration, mocking and tagging need some programming logic
