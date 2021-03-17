@@ -2,11 +2,11 @@
     "name": "earc/di",
     "description": "eArc - the explicit architecture framework - dependency injection component",
     "type": "library",
-    "version": "2.4",
+    "version": "3.0",
     "minimum-stability": "dev",
     "prefer-stable" : true,
     "require": {
-        "php": "^7.2"
+        "php": "^8.0 || ^7.2"
     },
     "license": "MIT",
     "authors": [
@@ -26,7 +26,7 @@
         }
     },
     "require-dev": {
-        "behat/behat": "^3.5",
-        "phpunit/phpunit": "^7.5"
+        "behat/behat": "*",
+        "phpunit/phpunit": "*"
     }
 }

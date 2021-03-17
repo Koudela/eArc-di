@@ -162,11 +162,11 @@ interface ResolverInterface
     /**
      * Adds a tag to a class.
      *
-     * @param string $fQCN     The fully qualified class name of the class to tag.
      * @param string $name     The tag name.
+     * @param string $fQCN     The fully qualified class name of the class to tag.
      * @param mixed  $argument The argument passed with the fully qualified class name.
      */
-    public static function tag(string $fQCN, string $name, $argument=null): void;
+    public static function tag(string $name, string $fQCN, $argument=null): void;
 
     /**
      * Returns an iterable for iterating over all fully qualified class names and their

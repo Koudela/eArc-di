@@ -19,6 +19,10 @@ use eArc\DI\Exceptions\InvalidArgumentException;
 use eArc\DI\Exceptions\MakeClassException;
 use eArc\DI\Exceptions\NotFoundException;
 use Exception;
+use function PHPUnit\Framework\assertNotSame;
+use function PHPUnit\Framework\assertNotTrue;
+use function PHPUnit\Framework\assertSame;
+use function PHPUnit\Framework\assertTrue;
 
 $vendorDir = __DIR__.'/../../vendor';
 
@@ -248,7 +252,7 @@ class FeatureContext implements Context
      */
     public function diTagWithParameterAndIsCalled(string $className, string $tagName)
     {
-        di_tag(self::CLASS_NAMESPACE.$className, $tagName);
+        di_tag($tagName, self::CLASS_NAMESPACE.$className);
     }
 
     /**

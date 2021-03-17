@@ -193,7 +193,7 @@ abstract class Resolver implements ResolverInterface
         }
     }
 
-    public static function tag(string $fQCN, string $name, $argument=null): void
+    public static function tag(string $name, string $fQCN, $argument=null): void
     {
         self::$tags[$name][$fQCN] = $argument;
     }

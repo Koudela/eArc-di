@@ -163,9 +163,9 @@ namespace {
             }
 
             if (!function_exists('di_tag')) {
-                function di_tag(string $fQCN, string $name, $argument=null): void
+                function di_tag(string $name, string $fQCN, $argument=null): void
                 {
-                    BootstrapEArcDI::getResolver()::tag($fQCN, $name, $argument);
+                    BootstrapEArcDI::getResolver()::tag($name, $fQCN, $argument);
                 }
             }
 

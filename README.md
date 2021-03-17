@@ -514,9 +514,9 @@ Three answers solves earc/di for you through tagging.
 The third party can store the relevant piece of information by executing
 
 ```php
-di_tag(Service002::class,'tag.name');
-di_tag(Service007::class,'tag.name');
-di_tag(Service014::class,'tag.name');
+di_tag('tag.name', Service002::class);
+di_tag('tag.name', Service007::class);
+di_tag('tag.name', Service014::class);
 ```
 
 Your base class can retrieve the service classes by iterating over `di_get_tagged('tag.name')`
@@ -645,6 +645,10 @@ migrate step by step).
 There is no limit. Create your own one to rule them all and make your live easy again.    
 
 ## releases
+
+### release v3.0
+* PHP 8.0 support
+* di_tag parameter swap to give you a better ability to search relevant pieces in code
 
 ### release v2.4
 
