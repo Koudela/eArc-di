@@ -28,13 +28,15 @@ which builds on the top of earc/di.
    - [architectural considerations](#architectural-considerations)
    - [integration with other di systems](#integration-with-other-di-systems)
  - [releases](#releases)
-   - [release v2.4](#release-v24)
-   - [release v2.3](#release-v23)
-   - [release v2.2](#release-v22)
-   - [release v2.1](#release-v21)
-   - [release v2.0](#release-v20)
-   - [release v1.0](#release-v10)
-   - [release v0.1](#release-v01)
+   - [release 3.1](#release-31)
+   - [release 3.0](#release-30)
+   - [release 2.4](#release-24)
+   - [release 2.3](#release-23)
+   - [release 2.2](#release-22)
+   - [release 2.1](#release-21)
+   - [release 2.0](#release-20)
+   - [release 1.0](#release-10)
+   - [release 0.1](#release-01)
 
 ## pro/cons
 
@@ -648,7 +650,7 @@ There is no limit. Create your own one to rule them all and make your live easy 
 
 ### release 3.1
 
-** circular dependency detection
+* circular dependency detection
 
 ### release 3.0
 
