@@ -646,30 +646,35 @@ There is no limit. Create your own one to rule them all and make your live easy 
 
 ## releases
 
-### release v3.0
+### release 3.1
+
+** circular dependency detection
+
+### release 3.0
+
 * PHP 8.0 support
 * di_tag parameter swap to give you a better ability to search relevant pieces in code
 
-### release v2.4
+### release 2.4
 
 * IDE support for PHPStorm:
     - return type support for `di_get`, `di_make` and `di_static`
 
-### release v2.3
+### release 2.3
 
 * factory support
 
-### release v2.2
+### release 2.2
 
 * default parameter 
 * batch decoration
 * namespace decoration
 
-### release v2.1
+### release 2.1
 
-* an argument can be passed for an tag
+* an argument can be passed for a tag
 
-### release v2.0
+### release 2.0
 
 * complete rewrite based on a new view on dependency injection
 
@@ -694,7 +699,7 @@ There is no limit. Create your own one to rule them all and make your live easy 
 
 * dependency on other libraries dropped - in favour of a lightweight architecture
 
-### release v1.0
+### release 1.0
 
 * support for flags.
 
@@ -710,6 +715,6 @@ There is no limit. Create your own one to rule them all and make your live easy 
 * `DependencyContainer::loadFile()` is no longer supported. You can emulate it 
 by `DependencyContainer::load(include ...)`.
 
-### release v0.1
+### release 0.1
 
 the first official release

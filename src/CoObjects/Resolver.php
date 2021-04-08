@@ -74,22 +74,42 @@ abstract class Resolver implements ResolverInterface
      */
     protected static function makeDirect(string $fQCN)
     {
+        static $currentMakes = [];
+
+        if (array_key_exists($fQCN, $currentMakes)) {
+            throw new MakeClassException(sprintf('Cyclic reference exception for %s', $fQCN));
+        }
+
+        $currentMakes[$fQCN] = true;
+
         if (isset(self::$factory[$fQCN])) {
             $object = call_user_func(self::$factory[$fQCN]);
+
+            unset($currentMakes[$fQCN]);
+
             if (!$object instanceof $fQCN) {
                 throw new MakeClassException(sprintf(
                     'Factory returned class of type `%s` is registered for type `%s`.',
                     is_object($object) ? get_class($object) : gettype($object), $fQCN));
             }
+
             return $object;
         }
 
         if (!class_exists($fQCN)) {
+            unset($currentMakes[$fQCN]);
+
             throw new MakeClassException(sprintf('No class found for %s.', $fQCN));
         }
         try {
-            return new $fQCN();
+            $object = new $fQCN();
+
+            unset($currentMakes[$fQCN]);
+
+            return $object;
         } catch (Exception $e) {
+            unset($currentMakes[$fQCN]);
+
             throw new MakeClassException($e->getMessage(), $e->getCode(), $e);
         }
     }
